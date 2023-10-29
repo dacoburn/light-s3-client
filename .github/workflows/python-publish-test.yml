@@ -1,7 +1,7 @@
 name: Build Python Package
 
 on:
-  push:
+  pull_request:
     branches:
       - dev
 
@@ -38,7 +38,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/light-s3-client
+      url: https://test.pypi.org/p/light_s3_client
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
@@ -53,4 +53,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
