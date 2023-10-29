@@ -38,7 +38,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/light-s3-client
+      url: https://test.pypi.org/p/light_s3_client
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
