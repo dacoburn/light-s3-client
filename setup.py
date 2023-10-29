@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="light-s3",
+    name="light-s3-client",
     version="0.0.1",
     author="Douglas Coburn",
     author_email="douglas@dactbc.com",

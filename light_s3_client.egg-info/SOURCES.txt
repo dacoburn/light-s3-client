@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+light_s3_client.egg-info/PKG-INFO
+light_s3_client.egg-info/SOURCES.txt
+light_s3_client.egg-info/dependency_links.txt
+light_s3_client.egg-info/top_level.txt
+s3/__init__.py
