@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="light-s3-client",
-    version="0.0.3",
+    version="0.0.4",
     author="Douglas Coburn",
     author_email="douglas@dactbc.com",
     description="A lightweight S3 client that does not rely on boto3",

@@ -24,6 +24,7 @@ class Client:
         self.server = server
         if self.server is None:
             self.server = f"https://s3-{self.region}.amazonaws.com"
+
         self.access_key = access_key
         self.secret_key = secret_key
         self.date_format = "%a, %d %b %Y %H:%M:%S +0000"

@@ -1,6 +1,6 @@
 # light-s3-client
 
-The AWS Boto3 Client is quite heavy, and usually we only need very specific functionality. This tool only implents needed functionality uses the requests library and the S3 Resp API.
+The AWS Boto3 Client is quite heavy, and usually specific functionality is needed. This module only implements needed functionality uses the requests library and the S3 Resp API.
 
 Reference doc used for this creation: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html#signing-request-intro
 
