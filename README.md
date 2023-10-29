@@ -12,8 +12,11 @@ Reference doc used for this creation: https://docs.aws.amazon.com/AmazonS3/lates
 Download an S3 object to a file
 
 **Usage:**
+
 ````python
+
 import s3
+
 s3 = s3.Client(
     region="us-west-1",
     access_key="REPLACE_ME",
@@ -31,9 +34,12 @@ s3.download_file("mybucket", "hello.txt", "/tmp/hello.txt")
 Upload a File Object to S3
 
 **Usage:**
+
 ````python
+
 import s3
 import json
+
 
 def get_file_contents(file_name) -> bytes:
     file_handle = open(file_name, "r")
@@ -42,6 +48,7 @@ def get_file_contents(file_name) -> bytes:
     file_handle.close()
     data = str_content.encode("utf-8")
     return data
+
 
 s3 = s3.Client(
     region="us-west-1",
@@ -61,8 +68,10 @@ s3.upload_fileobj(upload_data, "example-bucket", "/path/example.json")
 Delete a S3 object
 
 **Usage:**
+
 ````python
-import s3
+
+from src import s3
 
 s3 = s3.Client(
     region="us-west-1",
