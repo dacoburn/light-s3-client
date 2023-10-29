@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: light-s3-client
-Version: 0.0.2
+Version: 0.0.3
 Summary: A lightweight S3 client that does not rely on boto3
 Home-page: https://github.com/dacoburn/light-s3-client
 Author: Douglas Coburn
