@@ -22,9 +22,9 @@ Download an S3 object to a file
 
 .. code-block:: python
 
-    import light_s3_client
+    from light_s3_client import Client
 
-    s3 = light_s3_client.Client(
+    s3 = Client(
         region="us-west-1",
         access_key="REPLACE_ME",
         secret_key="REPLACE_ME"
@@ -48,7 +48,7 @@ Upload a File Object to S3
 
 .. code-block:: python
 
-    import light_s3_client
+    from light_s3_client import Client
     import json
 
 
@@ -61,13 +61,13 @@ Upload a File Object to S3
         return data
 
 
-    s3 = light_s3_client.Client(
+    s3 = Client(
         region="us-west-1",
         access_key="REPLACE_ME",
         secret_key="REPLACE_ME"
     )
     upload_data = get_file_contents("example.json")
-    s3.upload_fileobj(upload_data, "example-bucket", "/path/example.json")
+    s3.upload_fileobj(upload_data, "example-bucket", "path/example.json")
 
 **PARAMETERS:**
 
@@ -84,19 +84,65 @@ Delete a S3 object
 
 .. code-block:: python
 
-    from src import s3
+    from light_s3_client import Client
 
-    s3 = s3.Client(
+    s3 = Client(
         region="us-west-1",
         access_key="REPLACE_ME",
         secret_key="REPLACE_ME"
     )
-    s3.delete_file("example-bucket", "/path/example.json")
+    s3.delete_file("example-bucket", "path/example.json")
 
 **PARAMETERS:**
 
 - **Bucket (str)** – The name of the bucket to upload to. 
 - **Key (str)** – The name of the key to upload to.(Fileobj, Bucket, Key)
+
+Client.list_objects(Bucket, Prefix)
+"""""""""""""""""""""""""""""""""
+
+Lists all keys in an object
+
+**Usage:**
+
+.. code-block:: python
+
+    from light_s3_client import Client
+
+    s3 = Client(
+        region="us-west-1",
+        access_key="REPLACE_ME",
+        secret_key="REPLACE_ME"
+    )
+    keys = s3.list_objects("example-bucket", "prefix")
+
+**PARAMETERS:**
+
+- **Bucket (str)** – The name of the bucket to upload to.
+- **Prefix (str)** – The prefix to use as the search for getting keys from the bucket
+
+Client.get_object(Bucket, Key)
+"""""""""""""""""""""""""""""""
+
+Returns if an object exists or not
+
+**Usage:**
+
+.. code-block:: python
+
+    from light_s3_client import Client
+
+    s3 = Client(
+        region="us-west-1",
+        access_key="REPLACE_ME",
+        secret_key="REPLACE_ME"
+    )
+    keys = s3.list_objects("example-bucket", "path/file.txt")
+
+**PARAMETERS:**
+
+- **Bucket (str)** – The name of the bucket to upload to.
+- **Key (str)** – The key to check if it exists in the bucket
 
 
 Client Parameters

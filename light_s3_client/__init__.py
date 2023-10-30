@@ -83,7 +83,7 @@ class Client:
                     data.append(key)
         return data
 
-    def get_object(self, Bucket: str, Key: str) -> [str, None]:
+    def get_object(self, Bucket: str, Key: str) -> bool:
         """
         get_s3_file will download a file from a specified key in a S3 bucket
         :param Bucket: String method of the request type
@@ -106,18 +106,18 @@ class Client:
         try:
             response = requests.get(url=s3_url, headers=headers, stream=True)
             if response.status_code == 200:
-                data = response.text
+                exists = True
             else:
-                data = None
+                exists = False
                 print(f"Something went wrong getting {Key}")
                 print(response.text)
         except Exception as error:
-            data = None
+            exists = False
             print(f"Something went wrong getting {Key}")
             print(error)
-        return data
+        return exists
 
-    def download_file(self, Bucket: str, Key: str, Filename: str) -> [str, None]:
+    def download_file(self, Bucket: str, Key: str, Filename: str) -> str:
         """
         get_s3_file will download a file from a specified key in a S3 bucket
         :param Bucket: String method of the request type
@@ -145,11 +145,11 @@ class Client:
                     for chunk in response.iter_content(chunk_size=128):
                         file_handle.write(chunk)
             else:
-                Filename = None
+                Filename = ""
                 print(f"Something went wrong downloading {s3_key}")
                 print(response.text)
         except Exception as error:
-            Filename = None
+            Filename = ""
             print(f"Something went wrong downloading {s3_key}")
             print(error)
         return Filename
