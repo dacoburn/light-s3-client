@@ -99,7 +99,7 @@ Delete a S3 object
 - **Key (str)** – The name of the key to upload to.(Fileobj, Bucket, Key)
 
 Client.list_objects(Bucket, Prefix)
-"""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""
 
 Lists all keys in an object
 
@@ -122,7 +122,7 @@ Lists all keys in an object
 - **Prefix (str)** – The prefix to use as the search for getting keys from the bucket
 
 Client.get_object(Bucket, Key)
-"""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""
 
 Returns if an object exists or not
 
