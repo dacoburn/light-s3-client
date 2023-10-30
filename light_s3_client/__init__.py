@@ -4,6 +4,8 @@ import hmac
 from hashlib import sha1
 from datetime import datetime
 import io
+import xmltodict
+import os
 
 
 class Client:
@@ -13,6 +15,7 @@ class Client:
     secret_key: str
     date_format: str
     region: str
+    base_url: str
 
     def __init__(self,
                  access_key: str,
@@ -22,24 +25,23 @@ class Client:
                  encryption="AES256") -> None:
         self.region = region
         self.server = server
+        self.base_url = "amazonaws.com"
         if self.server is None:
-            self.server = f"https://s3-{self.region}.amazonaws.com"
-
+            self.server = f"https://s3-{self.region}.{self.base_url}"
         self.access_key = access_key
         self.secret_key = secret_key
         self.date_format = "%a, %d %b %Y %H:%M:%S +0000"
         self.encryption = encryption
 
-    def download_file(self, Bucket: str, Key: str, Filename: str) -> [str, None]:
+    def list_objects(self, Bucket: str, Prefix: str) -> list:
         """
         get_s3_file will download a file from a specified key in a S3 bucket
         :param Bucket: String method of the request type
-        :param Key: The S3 path of the file to download
-        :param Filename: String of the path where to save the file locally
+        :param Prefix: The S3 path of the file to download
         :return:
         """
-        s3_url, s3_key = self.build_vars(Key, Bucket)
-        _, file_name = Key.rsplit("/", 1)
+        s3_url = f"https://{Bucket}.s3.{self.base_url}/?list-type=2&prefix={Prefix}"
+        s3_key = f"{Bucket}/"
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.utcnow()
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
@@ -54,6 +56,91 @@ class Client:
         try:
             response = requests.get(url=s3_url, headers=headers, stream=True)
             if response.status_code == 200:
+                data = Client.get_bucket_keys(response.text, Prefix)
+            else:
+                data = []
+                print(f"Something went wrong getting {Prefix}")
+                print(response.text)
+        except Exception as error:
+            data = []
+            print(f"Something went wrong getting {Prefix}")
+            print(error)
+        return data
+
+    @staticmethod
+    def get_bucket_keys(xml_text: str, prefix: str) -> list:
+        xml_data = xmltodict.parse(xml_text)
+        results = xml_data.get("ListBucketResult")
+        if results is not None:
+            contents = results.get("Contents")
+        else:
+            contents = None
+        data = []
+        if contents is not None:
+            for content in contents:
+                key = content.get("Key")
+                if key is not None and key.rstrip("/") != prefix.rstrip("/"):
+                    data.append(key)
+        return data
+
+    def get_object(self, Bucket: str, Key: str) -> [str, None]:
+        """
+        get_s3_file will download a file from a specified key in a S3 bucket
+        :param Bucket: String method of the request type
+        :param Key: The S3 path of the file to download
+        :return:
+        """
+        s3_url = f"https://{Bucket}.s3.{self.base_url}/{Key}"
+        s3_key = f"{Bucket}/{Key}"
+        # Current time needs to be within 10 minutes of the S3 Server
+        date = datetime.utcnow()
+        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
+        # Create the authorization Signature
+        signature = self.create_aws_signature(date, s3_key, "GET")
+        # Date is needed as part of the authorization
+        headers = {
+            "Authorization": signature,
+            "Date": date
+        }
+        # Make the request
+        try:
+            response = requests.get(url=s3_url, headers=headers, stream=True)
+            if response.status_code == 200:
+                data = response.text
+            else:
+                data = None
+                print(f"Something went wrong getting {Key}")
+                print(response.text)
+        except Exception as error:
+            data = None
+            print(f"Something went wrong getting {Key}")
+            print(error)
+        return data
+
+    def download_file(self, Bucket: str, Key: str, Filename: str) -> [str, None]:
+        """
+        get_s3_file will download a file from a specified key in a S3 bucket
+        :param Bucket: String method of the request type
+        :param Key: The S3 path of the file to download
+        :param Filename: String of the path where to save the file locally
+        :return:
+        """
+        s3_url, s3_key = self.build_vars(Key, Bucket)
+        # Current time needs to be within 10 minutes of the S3 Server
+        date = datetime.utcnow()
+        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
+        # Create the authorization Signature
+        signature = self.create_aws_signature(date, s3_key, "GET")
+        # Date is needed as part of the authorization
+        headers = {
+            "Authorization": signature,
+            "Date": date
+        }
+        # Make the request
+        try:
+            response = requests.get(url=s3_url, headers=headers, stream=True)
+            if response.status_code == 200:
+                Client.create_download_folders(Filename)
                 with open(Filename, "wb") as file_handle:
                     for chunk in response.iter_content(chunk_size=128):
                         file_handle.write(chunk)
@@ -66,6 +153,13 @@ class Client:
             print(f"Something went wrong downloading {s3_key}")
             print(error)
         return Filename
+
+    @staticmethod
+    def create_download_folders(key):
+        if "/" in key:
+            folder, _ = key.rsplit("/", 1)
+            if not os.path.exists(folder):
+                os.makedirs(folder)
 
     def upload_fileobj(
             self,
