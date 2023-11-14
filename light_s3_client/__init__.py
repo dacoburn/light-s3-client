@@ -6,6 +6,18 @@ from datetime import datetime
 import io
 import xmltodict
 import os
+import logging
+
+
+__author__ = 'socket.dev'
+__version__ = '0.0.16'
+__all__ = [
+    "Client",
+]
+
+
+log = logging.getLogger("light-s3-client")
+log.addHandler(logging.NullHandler())
 
 
 class Client:
@@ -59,12 +71,12 @@ class Client:
                 data = Client.get_bucket_keys(response.text, Prefix)
             else:
                 data = []
-                print(f"Something went wrong getting {Prefix}")
-                print(response.text)
+                log.error(f"Something went wrong getting {Prefix}")
+                log.error(response.text)
         except Exception as error:
             data = []
-            print(f"Something went wrong getting {Prefix}")
-            print(error)
+            log.error(f"Something went wrong getting {Prefix}")
+            log.error(error)
         return data
 
     @staticmethod
@@ -109,12 +121,12 @@ class Client:
                 exists = True
             else:
                 exists = False
-                print(f"Something went wrong getting {Key}")
-                print(response.text)
+                log.error(f"Something went wrong getting {Key}")
+                log.error(response.text)
         except Exception as error:
             exists = False
-            print(f"Something went wrong getting {Key}")
-            print(error)
+            log.error(f"Something went wrong getting {Key}")
+            log.error(error)
         return exists
 
     def download_file(self, Bucket: str, Key: str, Filename: str) -> str:
@@ -146,12 +158,12 @@ class Client:
                         file_handle.write(chunk)
             else:
                 Filename = ""
-                print(f"Something went wrong downloading {s3_key}")
-                print(response.text)
+                log.error(f"Something went wrong downloading {s3_key}")
+                log.error(response.text)
         except Exception as error:
             Filename = ""
-            print(f"Something went wrong downloading {s3_key}")
-            print(error)
+            log.error(f"Something went wrong downloading {s3_key}")
+            log.error(error)
         return Filename
 
     @staticmethod
@@ -163,22 +175,24 @@ class Client:
 
     def upload_fileobj(
             self,
-            Fileobj: bytes,
+            Fileobj: [bytes, io.TextIOWrapper],
             Bucket: str,
             Key: str
     ) -> [requests.Response, None]:
         """
-        upload_fileobj takes a path for a file and binary data file to put in a S3
-        bucket
+        upload_fileobj uploaded a file to a S3 Bucket
         :param Bucket: The S3 Bucket name
         :param Key: String path of where the file is uploaded to
-        :param Fileobj: Bytes object of the data being uploaded
+        :param Fileobj: takes either a bytes object or file like object to upload
         :return:
         """
         # Create a binary file object using io
         # report_file = io.BytesIO(data.encode("utf-8"))
         s3_url, s3_key = self.build_vars(Key, Bucket)
-        data = io.BytesIO(Fileobj)
+        if type(Fileobj) == io.TextIOWrapper:
+            data = Fileobj
+        else:
+            data = io.BytesIO(Fileobj)
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.utcnow()
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
@@ -197,12 +211,12 @@ class Client:
                 data=data
             )
             if response.status_code != 200:
-                print(f"Something went wrong uploading {Key}")
-                print(response.text)
+                log.error(f"Something went wrong uploading {Key}")
+                log.error(response.text)
                 response = None
         except Exception as error:
-            print(f"Unable to upload {s3_key}")
-            print(error)
+            log.error(f"Unable to upload {s3_key}")
+            log.error(error)
             response = None
         return response
 
@@ -229,13 +243,13 @@ class Client:
         try:
             response = requests.delete(url=s3_url, headers=headers)
             if response.status_code != 204:
-                print(
+                log.error(
                     f"Failed to perform request to delete {s3_key}")
-                print(response.text)
+                log.error(response.text)
                 is_error = True
         except Exception as error:
-            print(f"Failed to perform request to delete {s3_key}")
-            print(error)
+            log.error(f"Failed to perform request to delete {s3_key}")
+            log.error(error)
             is_error = True
         return is_error
 
@@ -251,14 +265,14 @@ class Client:
         """
         string_to_sign = f"{method}\n\n\n{date}\n/{key}".encode(
             "UTF-8")
-        # print(string_to_sign)
+        # log.error(string_to_sign)
         signature = base64.encodebytes(
             hmac.new(
                 self.secret_key.encode("UTF-8"), string_to_sign, sha1
             ).digest()
         ).strip()
         signature = f"AWS {self.access_key}:{signature.decode()}"
-        # print(signature)
+        # log.error(signature)
         return signature
 
     def build_vars(self, file_name: str, bucket_name) -> (str, str):
