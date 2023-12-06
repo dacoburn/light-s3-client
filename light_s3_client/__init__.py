@@ -173,11 +173,11 @@ class Client:
             if not os.path.exists(folder):
                 os.makedirs(folder)
 
-        def upload_fileobj(
-            self,
-            Fileobj: bytes | io.TextIOWrapper | io.BufferedReader,
-            Bucket: str,
-            Key: str
+    def upload_fileobj(
+        self,
+        Fileobj: bytes | io.TextIOWrapper | io.BufferedReader,
+        Bucket: str,
+        Key: str
     ) -> [requests.Response, None]:
         """
         upload_fileobj uploaded a file to a S3 Bucket
