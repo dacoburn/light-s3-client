@@ -173,9 +173,9 @@ class Client:
             if not os.path.exists(folder):
                 os.makedirs(folder)
 
-    def upload_fileobj(
+        def upload_fileobj(
             self,
-            Fileobj: [bytes, io.TextIOWrapper],
+            Fileobj: bytes | io.TextIOWrapper | io.BufferedReader,
             Bucket: str,
             Key: str
     ) -> [requests.Response, None]:
@@ -189,7 +189,7 @@ class Client:
         # Create a binary file object using io
         # report_file = io.BytesIO(data.encode("utf-8"))
         s3_url, s3_key = self.build_vars(Key, Bucket)
-        if type(Fileobj) == io.TextIOWrapper:
+        if type(Fileobj) == io.TextIOWrapper or type(Fileobj) == io.BufferedReader:
             data = Fileobj
         else:
             data = io.BytesIO(Fileobj)
