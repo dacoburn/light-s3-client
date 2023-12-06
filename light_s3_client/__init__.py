@@ -7,10 +7,11 @@ import io
 import xmltodict
 import os
 import logging
+from typing import Union
 
 
 __author__ = 'socket.dev'
-__version__ = '0.0.16'
+__version__ = '0.0.19'
 __all__ = [
     "Client",
 ]
@@ -175,7 +176,7 @@ class Client:
 
     def upload_fileobj(
         self,
-        Fileobj: bytes | io.TextIOWrapper | io.BufferedReader,
+        Fileobj: Union[bytes, io.TextIOWrapper, io.BufferedReader],
         Bucket: str,
         Key: str
     ) -> [requests.Response, None]:
