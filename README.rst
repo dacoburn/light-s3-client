@@ -137,7 +137,7 @@ Returns if an object exists or not
         access_key="REPLACE_ME",
         secret_key="REPLACE_ME"
     )
-    keys = s3.list_objects("example-bucket", "path/file.txt")
+    keys = s3.get_object("example-bucket", "path/file.txt")
 
 **PARAMETERS:**
 
