@@ -14,7 +14,7 @@ from light_s3_client.exceptions import BucketNotFound, AccessDeniedToBucket, Unk
 
 
 __author__ = 'socket.dev'
-__version__ = '0.0.19'
+__version__ = '0.0.20'
 __all__ = [
     "Client",
 ]
