@@ -3,3 +3,5 @@ venv
 .DS_Store
 main.py
 example.json
+test.py
+*.pyc
