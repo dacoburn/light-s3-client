@@ -4,3 +4,4 @@ venv
 main.py
 example.json
 test.py
+*.pyc
