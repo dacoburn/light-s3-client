@@ -21,13 +21,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install hatchling==1.27.0 hatch==1.14.0
-      - name: Get Version
-        id: version
+      - name: Set VERSION env
+        run: echo "VERSION=$(grep -E '^version\\s*=\\s*\".*\"' pyproject.toml | awk -F '\"' '{print $2}')" >> $GITHUB_ENV
+      - name: Check tag matches version
         run: |
-          RAW_VERSION=$(hatch version)
-          echo "VERSION=$RAW_VERSION" >> $GITHUB_ENV
-          if [ "v$RAW_VERSION" != "${{ github.ref_name }}" ]; then
-            echo "Error: Git tag does not match project version (v$RAW_VERSION)"
+          if [ "v$(grep -E '^version\\s*=\\s*\".*\"' pyproject.toml | awk -F '\"' '{print $2}')" != "${{ github.ref_name }}" ]; then
+            echo "Error: Git tag does not match project version (v$(grep -E '^version\\s*=\\s*\".*\"' pyproject.toml | awk -F '\"' '{print $2}'))"
             exit 1
           fi
       - name: Check if version exists on PyPI

@@ -24,6 +24,9 @@ jobs:
           pip install hatchling==1.27.0 hatch==1.14.0
       - name: Inject full dynamic version
         run: python .hooks/sync_version.py --dev
+
+      - name: Set VERSION env
+        run: echo "VERSION=$(grep -E '^version\\s*=\\s*\".*\"' pyproject.toml | awk -F '\"' '{print $2}')" >> $GITHUB_ENV
       - name: Clean previous builds
         run: rm -rf dist/ build/ *.egg-info
       - name: Build package
