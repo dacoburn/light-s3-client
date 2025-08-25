@@ -103,15 +103,6 @@ class Client:
         else:
             return f"https://s3-{self.region}.{self.base_url}"
     
-            def _get_server_url(self):
-                # Returns the server URL, ensuring it has a scheme
-                if self.server:
-                    if self.server.startswith("http://") or self.server.startswith("https://"):
-                        return self.server.rstrip('/')
-                    else:
-                        return f"https://{self.server.strip('/')}"
-                else:
-                    return f"https://s3-{self.region}.{self.base_url}"
 
     def list_objects(self, Bucket: str, Prefix: str) -> list:
         """
