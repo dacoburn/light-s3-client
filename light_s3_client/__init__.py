@@ -7,7 +7,7 @@ import io
 import xmltodict
 import os
 import logging
-
+from typing import Union
 
 __author__ = 'socket.dev'
 __version__ = '0.0.16'
@@ -37,13 +37,33 @@ class Client:
                  encryption="AES256") -> None:
         self.region = region
         self.server = server
-        self.base_url = "amazonaws.com"
+        self.base_url = "s3.amazonaws.com"
         if self.server is None:
             self.server = f"https://s3-{self.region}.{self.base_url}"
         self.access_key = access_key
         self.secret_key = secret_key
         self.date_format = "%a, %d %b %Y %H:%M:%S +0000"
         self.encryption = encryption
+
+    def _get_server_url(self):
+        # Returns the server URL, ensuring it has a scheme
+        if self.server:
+            if self.server.startswith("http://") or self.server.startswith("https://"):
+                return self.server.rstrip('/')
+            else:
+                return f"https://{self.server.strip('/')}"
+        else:
+            return f"https://s3-{self.region}.{self.base_url}"
+    
+            def _get_server_url(self):
+                # Returns the server URL, ensuring it has a scheme
+                if self.server:
+                    if self.server.startswith("http://") or self.server.startswith("https://"):
+                        return self.server.rstrip('/')
+                    else:
+                        return f"https://{self.server.strip('/')}"
+                else:
+                    return f"https://s3-{self.region}.{self.base_url}"
 
     def list_objects(self, Bucket: str, Prefix: str) -> list:
         """
@@ -52,7 +72,7 @@ class Client:
         :param Prefix: The S3 path of the file to download
         :return:
         """
-        s3_url = f"https://{Bucket}.s3.{self.base_url}/?list-type=2&prefix={Prefix}"
+        s3_url = f"{self._get_server_url()}/{Bucket}/?list-type=2&prefix={Prefix}"
         s3_key = f"{Bucket}/"
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.utcnow()
@@ -102,7 +122,7 @@ class Client:
         :param Key: The S3 path of the file to download
         :return:
         """
-        s3_url = f"https://{Bucket}.s3.{self.base_url}/{Key}"
+        s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
         s3_key = f"{Bucket}/{Key}"
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.utcnow()
@@ -175,24 +195,26 @@ class Client:
 
     def upload_fileobj(
         self,
-        Fileobj: bytes | io.TextIOWrapper | io.BufferedReader,
+        Fileobj: Union[bytes, io.BytesIO, io.TextIOWrapper, io.BufferedReader],
         Bucket: str,
         Key: str
-    ) -> [requests.Response, None]:
+    ) -> Union[requests.Response, None]:
         """
-        upload_fileobj uploaded a file to a S3 Bucket
+        upload_fileobj uploads a file to a S3 Bucket
         :param Bucket: The S3 Bucket name
         :param Key: String path of where the file is uploaded to
-        :param Fileobj: takes either a bytes object or file like object to upload
+        :param Fileobj: takes either a bytes object or file-like object to upload
         :return:
         """
-        # Create a binary file object using io
-        # report_file = io.BytesIO(data.encode("utf-8"))
         s3_url, s3_key = self.build_vars(Key, Bucket)
-        if type(Fileobj) == io.TextIOWrapper or type(Fileobj) == io.BufferedReader:
+        # Accept bytes, io.BytesIO, io.BufferedReader, io.TextIOWrapper
+        if isinstance(Fileobj, (io.BytesIO, io.BufferedReader, io.TextIOWrapper)):
             data = Fileobj
-        else:
+        elif isinstance(Fileobj, (bytes, bytearray)):
             data = io.BytesIO(Fileobj)
+        else:
+            log.error("Fileobj must be bytes, bytearray, io.BytesIO, io.BufferedReader, or io.TextIOWrapper")
+            return None
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.utcnow()
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
@@ -229,7 +251,7 @@ class Client:
         """
         s3_url, s3_key = self.build_vars(Key, Bucket)
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.utcnow()
+        date = datetime.now(datetime.timezone.utc)
         date = date.strftime(self.date_format)
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "DELETE")
@@ -253,7 +275,7 @@ class Client:
             is_error = True
         return is_error
 
-    def create_aws_signature(self, date, key, method) -> (str, str):
+    def create_aws_signature(self, date, key, method) -> str:
         """
         create_aws_signature using the logic documented at
         https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html#signing-request-intro
@@ -275,7 +297,7 @@ class Client:
         # log.error(signature)
         return signature
 
-    def build_vars(self, file_name: str, bucket_name) -> (str, str):
-        s3_url = f"{self.server}/{bucket_name}/{file_name}"
+    def build_vars(self, file_name: str, bucket_name) -> tuple[str, str]:
+        s3_url = f"{self._get_server_url()}/{bucket_name}/{file_name}"
         s3_key = f"{bucket_name}/{file_name}"
         return s3_url, s3_key

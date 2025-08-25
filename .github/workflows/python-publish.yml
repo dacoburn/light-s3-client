@@ -1,88 +1,52 @@
-name: Build Python Package
+name: Release
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
-  build:
-    name: Build Distribution
+  release:
     runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.x"
-      - name: Install build
-        run: >-
-          python3 -m
-          pip install
-          build
-          --user
-      - name: Build a binary wheel and source tarball
-        run: python3 -m build
-      - name: Store source files
-        uses: actions/upload-artifact@v3
-        with:
-          name: python-package-distributions
-          path: dist/
-  github-release:
-    name: >-
-      Sign the Python � distribution � with Sigstore
-      and upload them to GitHub Release
-    needs:
-      - publish-to-pypi
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: write  # IMPORTANT: mandatory for making GitHub Releases
-      id-token: write  # IMPORTANT: mandatory for sigstore
-
-    steps:
-      - name: Download all the dists
-        uses: actions/download-artifact@v3
-        with:
-          name: python-package-distributions
-          path: dist/
-      - name: Sign the dists with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v1.2.3
-        with:
-          inputs: >-
-            ./dist/*.tar.gz
-            ./dist/*.whl
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create
-          '${{ github.ref_name }}'
-          --notes ""
-      - name: Upload artifact signatures to GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release upload
-          '${{ github.ref_name }}' dist/**
-          --repo '${{ github.repository }}'
-  publish-to-pypi:
-    name: >-
-      Publish Python � distribution � to PyPI
-    needs:
-      - build
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/light_s3_client
     permissions:
       id-token: write
+      contents: read
     steps:
-      - name: Download all the dists
-        uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
         with:
-          name: python-package-distributions
-          path: dist/
-      - name: Publish distribution � to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install hatchling==1.27.0 hatch==1.14.0
+      - name: Get Version
+        id: version
+        run: |
+          RAW_VERSION=$(hatch version)
+          echo "VERSION=$RAW_VERSION" >> $GITHUB_ENV
+          if [ "v$RAW_VERSION" != "${{ github.ref_name }}" ]; then
+            echo "Error: Git tag does not match project version (v$RAW_VERSION)"
+            exit 1
+          fi
+      - name: Check if version exists on PyPI
+        id: version_check
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          if curl -s -f https://pypi.org/pypi/light-s3-client/$VERSION/json > /dev/null; then
+            echo "Version ${VERSION} already exists on PyPI"
+            echo "pypi_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version ${VERSION} not found on PyPI - proceeding with PyPI deployment"
+            echo "pypi_exists=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Build package
+        if: steps.version_check.outputs.pypi_exists != 'true'
+        run: |
+          pip install hatchling
+          hatch build
+      - name: Publish to PyPI
+        if: steps.version_check.outputs.pypi_exists != 'true'
+        uses: pypa/gh-action-pypi-publish@v1.12.4
