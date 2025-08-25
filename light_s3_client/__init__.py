@@ -4,7 +4,7 @@ from requests import Response
 import base64
 import hmac
 from hashlib import sha1
-from datetime import datetime
+from datetime import datetime, timezone
 import io
 import xmltodict
 import os
@@ -114,7 +114,7 @@ class Client:
         s3_url = f"{self._get_server_url()}/{Bucket}/?list-type=2&prefix={Prefix}"
         s3_key = f"{Bucket}/"
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(datetime.timezone.utc)
+        date = datetime.now(timezone.utc)
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "GET")
@@ -158,7 +158,7 @@ class Client:
         s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
         s3_key = f"{Bucket}/{Key}"
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(datetime.timezone.utc)
+        date = datetime.now(timezone.utc)
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "GET")
@@ -262,7 +262,7 @@ class Client:
         """
         s3_url, s3_key = self.build_vars(Key, Bucket)
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(datetime.timezone.utc)
+        date = datetime.now(timezone.utc)
         date = date.strftime(self.date_format)
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "DELETE")
