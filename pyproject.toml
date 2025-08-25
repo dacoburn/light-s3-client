@@ -1,6 +1,6 @@
 [project]
 name = "light-s3-client"
-version = "0.0.23"
+version = "0.0.24"
 description = "A lightweight S3 client."
 authors = [
 	{ name = "Douglas Coburn", email = "douglas@dactbc.com" }
