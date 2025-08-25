@@ -189,7 +189,7 @@ class Client:
         """
         s3_url, s3_key = self.build_vars(Key, Bucket)
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.utcnow()
+        date = datetime.now(timezone.utc)
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "GET")
@@ -238,7 +238,7 @@ class Client:
             log.error("Fileobj must be bytes, bytearray, io.BytesIO, io.BufferedReader, or io.TextIOWrapper")
             return None
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.utcnow()
+        date = datetime.now(timezone.utc)
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "PUT")
