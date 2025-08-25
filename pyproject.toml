@@ -1,5 +1,59 @@
 
+
 [build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "light-s3-client"
+version = "0.0.22"
+description = "A lightweight S3 client."
+authors = [
+	{ name = "Douglas Coburn", email = "douglas@dactbc.com" }
+]
+maintainers = [
+	{ name = "Douglas Coburn", email = "douglas@dactbc.com" }
+]
+readme = "README.rst"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+dependencies = [
+	"requests~=2.31.0",
+	"xmltodict~=0.13.0"
+]
+keywords = ["s3", "aws", "client", "lightweight"]
+
+classifiers = [
+	"Development Status :: 5 - Production/Stable",
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: MIT License",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3.8",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Operating System :: OS Independent",
+	"Topic :: Software Development :: Libraries :: Python Modules",
+	"Topic :: Utilities"
+]
+
+[project.optional-dependencies]
+dev = [
+	"pytest",
+	"pytest-cov",
+	"black",
+	"flake8"
+]
+test = [
+	"pytest",
+	"pytest-cov"
+]
+
+
+[tool.hatch.build.targets.sdist]
+include = ["light_s3_client/**"]
+
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
