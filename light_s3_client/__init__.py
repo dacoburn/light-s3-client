@@ -8,9 +8,10 @@ import xmltodict
 import os
 import logging
 from typing import Union
+from .version import __version__
+
 
 __author__ = 'socket.dev'
-__version__ = '0.0.16'
 __all__ = [
     "Client",
 ]
@@ -75,14 +76,15 @@ class Client:
         s3_url = f"{self._get_server_url()}/{Bucket}/?list-type=2&prefix={Prefix}"
         s3_key = f"{Bucket}/"
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.utcnow()
+        date = datetime.now(datetime.timezone.utc)
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "GET")
         # Date is needed as part of the authorization
         headers = {
             "Authorization": signature,
-            "Date": date
+            "Date": date,
+            "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
         try:
@@ -125,14 +127,15 @@ class Client:
         s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
         s3_key = f"{Bucket}/{Key}"
         # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.utcnow()
+        date = datetime.now(datetime.timezone.utc)
         date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "GET")
         # Date is needed as part of the authorization
         headers = {
             "Authorization": signature,
-            "Date": date
+            "Date": date,
+            "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
         try:
@@ -166,7 +169,8 @@ class Client:
         # Date is needed as part of the authorization
         headers = {
             "Authorization": signature,
-            "Date": date
+            "Date": date,
+            "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
         try:
@@ -223,7 +227,8 @@ class Client:
         # Date is needed as part of the authorization
         headers = {
             "Authorization": signature,
-            "Date": date
+            "Date": date,
+            "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
         try:
@@ -258,7 +263,8 @@ class Client:
         # Date is needed as part of the authorization
         headers = {
             "Authorization": signature,
-            "Date": date
+            "Date": date,
+            "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
         is_error = False

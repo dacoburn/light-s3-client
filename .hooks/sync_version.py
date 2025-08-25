@@ -6,13 +6,15 @@ import sys
 import urllib.request
 import json
 
-INIT_FILE = pathlib.Path("light_s3_client/__init__.py")
+
+VERSION_FILE = pathlib.Path("light_s3_client/version.py")
 PYPROJECT_FILE = pathlib.Path("pyproject.toml")
 VERSION_PATTERN = re.compile(r"__version__\s*=\s*['\"]([^'\"]+)['\"]")
 PYPROJECT_PATTERN = re.compile(r'^version\s*=\s*".*"$', re.MULTILINE)
 PYPI_API = "https://test.pypi.org/pypi/light-s3-client/json"
 
-def read_version_from_init(path: pathlib.Path) -> str:
+
+def read_version_from_version_py(path: pathlib.Path) -> str:
     content = path.read_text()
     match = VERSION_PATTERN.search(content)
     if not match:
@@ -57,10 +59,10 @@ def find_next_available_dev_version(base_version: str) -> str:
 
 def inject_version(version: str):
     print(f"🔁 Updating version to: {version}")
-    # Update __init__.py
-    init_content = INIT_FILE.read_text()
-    new_init_content = VERSION_PATTERN.sub(f"__version__ = '{version}'", init_content)
-    INIT_FILE.write_text(new_init_content)
+    # Update version.py
+    version_content = VERSION_FILE.read_text()
+    new_version_content = VERSION_PATTERN.sub(f"__version__ = '{version}'", version_content)
+    VERSION_FILE.write_text(new_version_content)
     # Update pyproject.toml
     pyproject = PYPROJECT_FILE.read_text()
     if PYPROJECT_PATTERN.search(pyproject):
@@ -71,8 +73,8 @@ def inject_version(version: str):
 
 def main():
     dev_mode = "--dev" in sys.argv
-    current_version = read_version_from_init(INIT_FILE)
-    previous_version = read_version_from_git("light_s3_client/__init__.py")
+    current_version = read_version_from_version_py(VERSION_FILE)
+    previous_version = read_version_from_git("light_s3_client/version.py")
     print(f"Current: {current_version}, Previous: {previous_version}")
     if current_version == previous_version:
         if dev_mode:
