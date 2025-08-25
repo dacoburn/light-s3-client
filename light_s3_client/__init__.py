@@ -11,6 +11,7 @@ import os
 import logging
 from typing import Union
 from .version import __version__
+from .exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
 
 
 __author__ = 'socket.dev'
@@ -142,6 +143,9 @@ class Client:
             contents = None
         data = []
         if contents is not None:
+            # Ensure contents is always a list
+            if isinstance(contents, dict):
+                contents = [contents]
             for content in contents:
                 key = content.get("Key")
                 if key is not None and key.rstrip("/") != prefix.rstrip("/"):

@@ -1,6 +1,6 @@
 [project]
 name = "light-s3-client"
-version = "0.0.29"
+version = "0.0.30"
 description = "A lightweight S3 client."
 authors = [
 	{ name = "Douglas Coburn", email = "douglas@dactbc.com" }
@@ -36,7 +36,8 @@ dev = [
 	"pytest",
 	"pytest-cov",
 	"black",
-	"flake8"
+	"flake8",
+	"python-dotenv"
 ]
 test = [
 	"pytest",

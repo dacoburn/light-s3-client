@@ -44,6 +44,8 @@ htmlcov/
 node_modules/
 /.env
 /.env.*
+.env
 test.py
 *.pyc
 .idea/
+local_tests/
