@@ -44,3 +44,5 @@ htmlcov/
 node_modules/
 /.env
 /.env.*
+test.py
+*.pyc

@@ -1,4 +1,6 @@
+import json
 import requests
+from requests import Response
 import base64
 import hmac
 from hashlib import sha1
@@ -20,6 +22,51 @@ __all__ = [
 log = logging.getLogger("light-s3-client")
 log.addHandler(logging.NullHandler())
 
+
+def do_request(
+        url: str,
+        headers: dict,
+        data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict] = None,
+        stream: bool = True,
+        method: str = "GET",
+        bucket: str = None,
+        key: str = None,
+        prefix: str = None
+) -> Union[None, Response]:
+    try:
+        response = requests.request(
+            method=method,
+            url=url,
+            headers=headers,
+            data=data,
+            stream=stream
+        )
+    except Exception as error:
+        msg = {
+            'error': f"Something went wrong performing {method} on {url}",
+            'data': str(error)
+        }
+        error_msg = json.dumps(msg)
+        response = Response()
+        response.status_code = 500
+        response._content = bytes(error_msg, 'utf-8')
+        return response
+    msg_items = [f"url: {url}", f"method: {method}"]
+    if bucket is not None:
+        msg_items.append(f"bucket: {bucket}")
+    if prefix is not None:
+        msg_items.append(f"prefix: {prefix}")
+    if key is not None:
+        msg_items.append(f"key: {key}")
+    msg = ", ".join(msg_items)
+    if response.status_code == 200 or response.status_code == 204:
+        return response
+    elif response.status_code == 403:
+        raise AccessDeniedToBucket(msg)
+    elif response.status_code == 404:
+        raise BucketNotFound(msg)
+    else:
+        raise UnknownBucketError(response.text)
 
 class Client:
     server: str
@@ -87,24 +134,17 @@ class Client:
             "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
-        try:
-            response = requests.get(url=s3_url, headers=headers, stream=True)
-            if response.status_code == 200:
-                data = Client.get_bucket_keys(response.text, Prefix)
-            else:
-                data = []
-                log.error(f"Something went wrong getting {Prefix}")
-                log.error(response.text)
-        except Exception as error:
-            data = []
-            log.error(f"Something went wrong getting {Prefix}")
-            log.error(error)
+        response = do_request(url=s3_url, headers=headers)
+        log.info(f"Retrieved keys for bucket {Bucket} with prefix {Prefix}")
+        data = Client.get_bucket_keys(response.text, Prefix)
         return data
 
     @staticmethod
     def get_bucket_keys(xml_text: str, prefix: str) -> list:
         xml_data = xmltodict.parse(xml_text)
         results = xml_data.get("ListBucketResult")
+        if prefix is None:
+            prefix = ""
         if results is not None:
             contents = results.get("Contents")
         else:
@@ -138,18 +178,14 @@ class Client:
             "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
+        exists = False
         try:
-            response = requests.get(url=s3_url, headers=headers, stream=True)
+            response = do_request(url=s3_url, headers=headers, stream=True)
             if response.status_code == 200:
+                log.info(f"key {Key} from bucket {Bucket} exists")
                 exists = True
-            else:
-                exists = False
-                log.error(f"Something went wrong getting {Key}")
-                log.error(response.text)
-        except Exception as error:
-            exists = False
-            log.error(f"Something went wrong getting {Key}")
-            log.error(error)
+        except BucketNotFound:
+            log.info(f"{Key} not found in {Bucket}")
         return exists
 
     def download_file(self, Bucket: str, Key: str, Filename: str) -> str:
@@ -173,21 +209,12 @@ class Client:
             "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
-        try:
-            response = requests.get(url=s3_url, headers=headers, stream=True)
-            if response.status_code == 200:
-                Client.create_download_folders(Filename)
-                with open(Filename, "wb") as file_handle:
-                    for chunk in response.iter_content(chunk_size=128):
-                        file_handle.write(chunk)
-            else:
-                Filename = ""
-                log.error(f"Something went wrong downloading {s3_key}")
-                log.error(response.text)
-        except Exception as error:
-            Filename = ""
-            log.error(f"Something went wrong downloading {s3_key}")
-            log.error(error)
+        response = do_request(url=s3_url, headers=headers, stream=True)
+        Client.create_download_folders(Filename)
+        with open(Filename, "wb") as file_handle:
+            for chunk in response.iter_content(chunk_size=128):
+                file_handle.write(chunk)
+        log.info(f"Downloaded key {Key} from bucket {Bucket}")
         return Filename
 
     @staticmethod
@@ -231,20 +258,8 @@ class Client:
             "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
-        try:
-            response = requests.put(
-                url=s3_url,
-                headers=headers,
-                data=data
-            )
-            if response.status_code != 200:
-                log.error(f"Something went wrong uploading {Key}")
-                log.error(response.text)
-                response = None
-        except Exception as error:
-            log.error(f"Unable to upload {s3_key}")
-            log.error(error)
-            response = None
+        response = do_request(url=s3_url, headers=headers, data=data, method="PUT")
+        log.info(f"Uploaded key {Key} to bucket {Bucket}")
         return response
 
     def delete_file(self, Bucket: str, Key: str) -> bool:
@@ -268,17 +283,9 @@ class Client:
         }
         # Make the request
         is_error = False
-        try:
-            response = requests.delete(url=s3_url, headers=headers)
-            if response.status_code != 204:
-                log.error(
-                    f"Failed to perform request to delete {s3_key}")
-                log.error(response.text)
-                is_error = True
-        except Exception as error:
-            log.error(f"Failed to perform request to delete {s3_key}")
-            log.error(error)
-            is_error = True
+        response = do_request(url=s3_url, headers=headers, method="DELETE")
+        if response.status_code == 204:
+            log.info(f"Deleted {Key} from {Bucket}")
         return is_error
 
     def create_aws_signature(self, date, key, method) -> str:
