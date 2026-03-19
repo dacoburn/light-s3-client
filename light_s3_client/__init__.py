@@ -3,7 +3,7 @@ import requests
 from requests import Response
 import base64
 import hmac
-from hashlib import sha1
+from hashlib import sha256
 from datetime import datetime, timezone
 import io
 import xmltodict
@@ -27,13 +27,13 @@ log.addHandler(logging.NullHandler())
 def do_request(
         url: str,
         headers: dict,
-        data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict] = None,
+        data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict, None] = None,
         stream: bool = True,
         method: str = "GET",
         bucket: str = None,
         key: str = None,
         prefix: str = None
-) -> Union[None, Response]:
+) -> Union[Response, None]:
     try:
         response = requests.request(
             method=method,
@@ -116,7 +116,7 @@ class Client:
         s3_key = f"{Bucket}/"
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.now(timezone.utc)
-        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
+        date = date.strftime(self.date_format)
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "GET")
         # Date is needed as part of the authorization
@@ -163,7 +163,7 @@ class Client:
         s3_key = f"{Bucket}/{Key}"
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.now(timezone.utc)
-        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
+        date = date.strftime(self.date_format)
         # Create the authorization Signature
         signature = self.create_aws_signature(date, s3_key, "GET")
         # Date is needed as part of the authorization
@@ -252,9 +252,19 @@ class Client:
             "Date": date,
             "User-Agent": f"light-s3-client/{__version__}"
         }
+        
+        # Set Content-Type based on file extension or default to application/octet-stream
+        import mimetypes
+        content_type, _ = mimetypes.guess_type(Key)
+        if content_type:
+            headers["Content-Type"] = content_type
+        else:
+            headers["Content-Type"] = "application/octet-stream"
+            
         # Make the request
         response = do_request(url=s3_url, headers=headers, data=data, method="PUT")
-        log.info(f"Uploaded key {Key} to bucket {Bucket}")
+        if response is not None:
+            log.info(f"Uploaded key {Key} to bucket {Bucket}")
         return response
 
     def delete_file(self, Bucket: str, Key: str) -> bool:
@@ -277,11 +287,13 @@ class Client:
             "User-Agent": f"light-s3-client/{__version__}"
         }
         # Make the request
-        is_error = False
         response = do_request(url=s3_url, headers=headers, method="DELETE")
         if response.status_code == 204:
             log.info(f"Deleted {Key} from {Bucket}")
-        return is_error
+            return True
+        else:
+            log.info(f"Failed to delete {Key} from {Bucket}")
+            return False
 
     def create_aws_signature(self, date, key, method) -> str:
         """
@@ -298,7 +310,7 @@ class Client:
         # log.error(string_to_sign)
         signature = base64.encodebytes(
             hmac.new(
-                self.secret_key.encode("UTF-8"), string_to_sign, sha1
+                self.secret_key.encode("UTF-8"), string_to_sign, sha256
             ).digest()
         ).strip()
         signature = f"AWS {self.access_key}:{signature.decode()}"
