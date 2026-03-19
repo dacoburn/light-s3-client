@@ -15,7 +15,7 @@ import io
 import xmltodict
 import os
 import logging
-from typing import Union
+from typing import Union, Optional, TYPE_CHECKING
 from .version import __version__
 from .exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
 from . import buckets, files, objects, auth, multipart
@@ -36,9 +36,9 @@ def do_request(
         data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict, None] = None,
         stream: bool = True,
         method: str = "GET",
-        bucket: str = None,
-        key: str = None,
-        prefix: str = None
+        bucket: Optional[str] = None,
+        key: Optional[str] = None,
+        prefix: Optional[str] = None
 ) -> Union[Response, None]:
     try:
         response = requests.request(
@@ -153,21 +153,49 @@ class Client:
                  access_key: str,
                  secret_key: str,
                  region: str,
-                 server: str = None,
+                 server: Optional[str] = None,
                  encryption="AES256") -> None:
         self.region = region
-        self.server = server
         self.base_url = "s3.amazonaws.com"
-        if self.server is None:
+        if server is None:
             self.server = f"https://s3-{self.region}.{self.base_url}"
+        else:
+            self.server = server
         self.access_key = access_key
         self.secret_key = secret_key
         self.date_format = "%a, %d %b %Y %H:%M:%S +0000"
         self.encryption = encryption
 
-    # Import methods from submodules
-    # These will be set dynamically after the class definition
-    pass
+    if TYPE_CHECKING:
+        @staticmethod
+        def do_request(
+            url: str,
+            headers: dict,
+            data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict, None] = None,
+            stream: bool = True,
+            method: str = "GET",
+            bucket: Optional[str] = None,
+            key: Optional[str] = None,
+            prefix: Optional[str] = None
+        ) -> Union[Response, None]: ...
+        def list_objects(self, Bucket: str, Prefix: str) -> list: ...
+        def get_object(self, Bucket: str, Key: str) -> bool: ...
+        def head_object(self, Bucket: str, Key: str) -> dict: ...
+        @staticmethod
+        def get_bucket_keys(xml_text: str, prefix: str) -> list: ...
+        def download_file(self, Bucket: str, Key: str, Filename: str) -> str: ...
+        def upload_fileobj(self, Fileobj: io.BytesIO, Bucket: str, Key: str) -> Optional[Response]: ...
+        def delete_file(self, Bucket: str, Key: str) -> bool: ...
+        @staticmethod
+        def create_download_folders(key: str) -> None: ...
+        def put_object_tagging(self, Bucket: str, Key: str, Tags: dict) -> bool: ...
+        def get_object_tagging(self, Bucket: str, Key: str) -> dict: ...
+        def upload_file_multipart(self, Fileobj: Union[io.BytesIO, bytes, bytearray], Bucket: str, Key: str, part_size: int = 5242880, max_parts: int = 10000) -> Optional[Response]: ...
+        def _abort_multipart_upload(self, Bucket: str, Key: str, upload_id: str) -> None: ...
+        def create_aws_signature(self, date: str, key: str, method: str) -> str: ...
+        def _get_current_date(self) -> str: ...
+        def _get_server_url(self) -> str: ...
+        def build_vars(self, file_name: str, bucket_name: str) -> tuple[str, str]: ...
 
 
 # Set up method bindings after class definition
@@ -178,23 +206,25 @@ import light_s3_client.auth as auth_module
 import light_s3_client.multipart as multipart_module
 
 # Bind methods to the Client class
-Client.list_objects = buckets_module.list_objects
-Client.get_object = buckets_module.get_object
-Client.head_object = buckets_module.head_object
-Client.get_bucket_keys = buckets_module.get_bucket_keys
+setattr(Client, 'do_request', staticmethod(do_request))
 
-Client.download_file = files_module.download_file
-Client.upload_fileobj = files_module.upload_fileobj
-Client.delete_file = files_module.delete_file
-Client.create_download_folders = files_module.create_download_folders
+setattr(Client, 'list_objects', buckets_module.list_objects)
+setattr(Client, 'get_object', buckets_module.get_object)
+setattr(Client, 'head_object', buckets_module.head_object)
+setattr(Client, 'get_bucket_keys', staticmethod(buckets_module.get_bucket_keys))
 
-Client.put_object_tagging = objects_module.put_object_tagging
-Client.get_object_tagging = objects_module.get_object_tagging
+setattr(Client, 'download_file', files_module.download_file)
+setattr(Client, 'upload_fileobj', files_module.upload_fileobj)
+setattr(Client, 'delete_file', files_module.delete_file)
+setattr(Client, 'create_download_folders', staticmethod(files_module.create_download_folders))
 
-Client.upload_file_multipart = multipart_module.upload_file_multipart
-Client._abort_multipart_upload = multipart_module._abort_multipart_upload
+setattr(Client, 'put_object_tagging', objects_module.put_object_tagging)
+setattr(Client, 'get_object_tagging', objects_module.get_object_tagging)
 
-Client.create_aws_signature = auth_module.create_aws_signature
-Client._get_current_date = auth_module._get_current_date
-Client._get_server_url = auth_module._get_server_url
-Client.build_vars = auth_module.build_vars
+setattr(Client, 'upload_file_multipart', multipart_module.upload_file_multipart)
+setattr(Client, '_abort_multipart_upload', multipart_module._abort_multipart_upload)
+
+setattr(Client, 'create_aws_signature', auth_module.create_aws_signature)
+setattr(Client, '_get_current_date', auth_module._get_current_date)
+setattr(Client, '_get_server_url', auth_module._get_server_url)
+setattr(Client, 'build_vars', auth_module.build_vars)
