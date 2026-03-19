@@ -76,3 +76,8 @@ This file contains a summary of completed updates and changes to the light-s3-cl
   - `create_aws_signature` now takes `(method, url, headers, payload)` and returns a dict of auth headers
 - Switched to `uv` for dependency management (`uv sync` / `uv.lock`)
 - Added Python 3.12 and 3.13 classifiers to `pyproject.toml`
+
+## Version 0.0.35 Updates
+
+- Fixed GitHub Actions workflow failure: `hatch build` failed with `module 'virtualenv.discovery.builtin' has no attribute 'propose_interpreters'` because `python-version: '3.x'` resolved to Python 3.14, which is incompatible with the `virtualenv` bundled in `hatch==1.14.0`
+- Pinned `python-version` to `'3.13'` in `python-publish-test.yml` and `python-publish.yml` workflows
