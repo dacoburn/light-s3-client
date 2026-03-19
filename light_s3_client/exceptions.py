@@ -1,10 +1,14 @@
-class BucketNotFound(Exception):
+class S3Error(Exception):
     pass
 
 
-class AccessDeniedToBucket(Exception):
+class BucketNotFound(S3Error):
     pass
 
 
-class UnknownBucketError(Exception):
+class AccessDeniedToBucket(S3Error):
+    pass
+
+
+class UnknownBucketError(S3Error):
     pass

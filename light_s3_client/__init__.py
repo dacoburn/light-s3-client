@@ -1,18 +1,23 @@
+"""
+light-s3-client - A lightweight Python library for interacting with Amazon S3.
+
+This module provides a simplified interface to S3 operations without requiring the full Boto3 SDK.
+"""
+
 import json
 import requests
 from requests import Response
 import base64
 import hmac
-from hashlib import sha1
+from hashlib import sha256
 from datetime import datetime, timezone
 import io
 import xmltodict
 import os
 import logging
-from typing import Union
+from typing import Union, Optional, TYPE_CHECKING
 from .version import __version__
 from .exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
-
 
 __author__ = 'socket.dev'
 __all__ = [
@@ -27,13 +32,13 @@ log.addHandler(logging.NullHandler())
 def do_request(
         url: str,
         headers: dict,
-        data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict] = None,
+        data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict, None] = None,
         stream: bool = True,
         method: str = "GET",
-        bucket: str = None,
-        key: str = None,
-        prefix: str = None
-) -> Union[None, Response]:
+        bucket: Optional[str] = None,
+        key: Optional[str] = None,
+        prefix: Optional[str] = None
+) -> Union[Response, None]:
     try:
         response = requests.request(
             method=method,
@@ -42,15 +47,49 @@ def do_request(
             data=data,
             stream=stream
         )
-    except Exception as error:
+    except requests.exceptions.ConnectionError as error:
         msg = {
-            'error': f"Something went wrong performing {method} on {url}",
+            'error': f"Connection error performing {method} on {url}",
             'data': str(error)
         }
         error_msg = json.dumps(msg)
         response = Response()
         response.status_code = 500
         response._content = bytes(error_msg, 'utf-8')
+        log.error(f"Connection error: {error}")
+        return response
+    except requests.exceptions.Timeout as error:
+        msg = {
+            'error': f"Timeout error performing {method} on {url}",
+            'data': str(error)
+        }
+        error_msg = json.dumps(msg)
+        response = Response()
+        response.status_code = 500
+        response._content = bytes(error_msg, 'utf-8')
+        log.error(f"Timeout error: {error}")
+        return response
+    except requests.exceptions.RequestException as error:
+        msg = {
+            'error': f"Request error performing {method} on {url}",
+            'data': str(error)
+        }
+        error_msg = json.dumps(msg)
+        response = Response()
+        response.status_code = 500
+        response._content = bytes(error_msg, 'utf-8')
+        log.error(f"Request error: {error}")
+        return response
+    except Exception as error:
+        msg = {
+            'error': f"Unexpected error performing {method} on {url}",
+            'data': str(error)
+        }
+        error_msg = json.dumps(msg)
+        response = Response()
+        response.status_code = 500
+        response._content = bytes(error_msg, 'utf-8')
+        log.error(f"Unexpected error: {error}")
         return response
     msg_items = [f"url: {url}", f"method: {method}"]
     if bucket is not None:
@@ -67,9 +106,40 @@ def do_request(
     elif response.status_code == 404:
         raise BucketNotFound(msg)
     else:
-        raise UnknownBucketError(response.text)
+        # Parse the S3 error response for more detailed error information
+        try:
+            error_data = xmltodict.parse(response.text)
+            error_code = error_data.get("Error", {}).get("Code", "Unknown")
+            error_message = error_data.get("Error", {}).get("Message", response.text)
+            detailed_msg = f"{error_code}: {error_message}"
+            raise UnknownBucketError(detailed_msg)
+        except Exception:
+            raise UnknownBucketError(response.text)
+
 
 class Client:
+    """
+    A lightweight S3 client for interacting with Amazon S3 or S3-compatible services.
+    
+    This client provides a simplified interface to S3 operations without requiring the full Boto3 SDK.
+    It implements AWS Signature Version 4 authentication directly using the requests library.
+    
+    Args:
+        access_key (str): The AWS Access Key for API Access
+        secret_key (str): The AWS Secret Key for API Access
+        region (str): The S3 region being used
+        server (str, optional): An override of the HTTPS URL to use. Defaults to None.
+        encryption (str, optional): The encryption algorithm to use for uploads. Defaults to "AES256".
+        
+    Attributes:
+        region (str): The S3 region being used
+        server (str): The S3 server URL
+        base_url (str): The base S3 URL
+        access_key (str): The AWS Access Key
+        secret_key (str): The AWS Secret Key
+        date_format (str): The date format used for requests
+        encryption (str): The encryption algorithm to use for uploads
+    """
     server: str
     bucket_name: str
     access_key: str
@@ -77,235 +147,86 @@ class Client:
     date_format: str
     region: str
     base_url: str
+    signature_version: str
 
     def __init__(self,
                  access_key: str,
                  secret_key: str,
                  region: str,
-                 server: str = None,
-                 encryption="AES256") -> None:
+                 server: Optional[str] = None,
+                 encryption="AES256",
+                 signature_version: str = "v4") -> None:
         self.region = region
-        self.server = server
         self.base_url = "s3.amazonaws.com"
-        if self.server is None:
+        if server is None:
             self.server = f"https://s3-{self.region}.{self.base_url}"
+        else:
+            self.server = server
         self.access_key = access_key
         self.secret_key = secret_key
         self.date_format = "%a, %d %b %Y %H:%M:%S +0000"
         self.encryption = encryption
+        self.signature_version = signature_version
 
-    def _get_server_url(self):
-        # Returns the server URL, ensuring it has a scheme
-        if self.server:
-            if self.server.startswith("http://") or self.server.startswith("https://"):
-                return self.server.rstrip('/')
-            else:
-                return f"https://{self.server.strip('/')}"
-        else:
-            return f"https://s3-{self.region}.{self.base_url}"
-    
+    if TYPE_CHECKING:
+        @staticmethod
+        def do_request(
+            url: str,
+            headers: dict,
+            data: Union[bytes, io.TextIOWrapper, io.BufferedReader, dict, None] = None,
+            stream: bool = True,
+            method: str = "GET",
+            bucket: Optional[str] = None,
+            key: Optional[str] = None,
+            prefix: Optional[str] = None
+        ) -> Union[Response, None]: ...
+        def list_objects(self, Bucket: str, Prefix: str) -> list: ...
+        def get_object(self, Bucket: str, Key: str) -> bool: ...
+        def head_object(self, Bucket: str, Key: str) -> dict: ...
+        @staticmethod
+        def get_bucket_keys(xml_text: str, prefix: str) -> list: ...
+        def download_file(self, Bucket: str, Key: str, Filename: str) -> str: ...
+        def upload_fileobj(self, Fileobj: io.BytesIO, Bucket: str, Key: str) -> Optional[Response]: ...
+        def delete_file(self, Bucket: str, Key: str) -> bool: ...
+        @staticmethod
+        def create_download_folders(key: str) -> None: ...
+        def put_object_tagging(self, Bucket: str, Key: str, Tags: dict) -> bool: ...
+        def get_object_tagging(self, Bucket: str, Key: str) -> dict: ...
+        def upload_file_multipart(self, Fileobj: Union[io.BytesIO, bytes, bytearray], Bucket: str, Key: str, part_size: int = 5242880, max_parts: int = 10000) -> Optional[Response]: ...
+        def _abort_multipart_upload(self, Bucket: str, Key: str, upload_id: str) -> None: ...
+        def create_aws_signature(self, method: str, url: str, headers: dict, payload=None) -> dict: ...
+        def _get_current_date(self) -> str: ...
+        def _get_server_url(self) -> str: ...
+        def build_vars(self, file_name: str, bucket_name: str) -> tuple[str, str]: ...
 
-    def list_objects(self, Bucket: str, Prefix: str) -> list:
-        """
-        get_s3_file will download a file from a specified key in a S3 bucket
-        :param Bucket: String method of the request type
-        :param Prefix: The S3 path of the file to download
-        :return:
-        """
-        s3_url = f"{self._get_server_url()}/{Bucket}/?list-type=2&prefix={Prefix}"
-        s3_key = f"{Bucket}/"
-        # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(timezone.utc)
-        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
-        # Create the authorization Signature
-        signature = self.create_aws_signature(date, s3_key, "GET")
-        # Date is needed as part of the authorization
-        headers = {
-            "Authorization": signature,
-            "Date": date,
-            "User-Agent": f"light-s3-client/{__version__}"
-        }
-        # Make the request
-        response = do_request(url=s3_url, headers=headers)
-        log.info(f"Retrieved keys for bucket {Bucket} with prefix {Prefix}")
-        data = Client.get_bucket_keys(response.text, Prefix)
-        return data
 
-    @staticmethod
-    def get_bucket_keys(xml_text: str, prefix: str) -> list:
-        xml_data = xmltodict.parse(xml_text)
-        results = xml_data.get("ListBucketResult")
-        if prefix is None:
-            prefix = ""
-        if results is not None:
-            contents = results.get("Contents")
-        else:
-            contents = None
-        data = []
-        if contents is not None:
-            # Ensure contents is always a list
-            if isinstance(contents, dict):
-                contents = [contents]
-            for content in contents:
-                key = content.get("Key")
-                if key is not None and key.rstrip("/") != prefix.rstrip("/"):
-                    data.append(key)
-        return data
+# Set up method bindings after class definition
+import light_s3_client.buckets as buckets_module
+import light_s3_client.files as files_module
+import light_s3_client.objects as objects_module
+import light_s3_client.auth as auth_module
+import light_s3_client.multipart as multipart_module
 
-    def get_object(self, Bucket: str, Key: str) -> bool:
-        """
-        get_s3_file will download a file from a specified key in a S3 bucket
-        :param Bucket: String method of the request type
-        :param Key: The S3 path of the file to download
-        :return:
-        """
-        s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
-        s3_key = f"{Bucket}/{Key}"
-        # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(timezone.utc)
-        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
-        # Create the authorization Signature
-        signature = self.create_aws_signature(date, s3_key, "GET")
-        # Date is needed as part of the authorization
-        headers = {
-            "Authorization": signature,
-            "Date": date,
-            "User-Agent": f"light-s3-client/{__version__}"
-        }
-        # Make the request
-        exists = False
-        try:
-            response = do_request(url=s3_url, headers=headers, stream=True)
-            if response.status_code == 200:
-                log.info(f"key {Key} from bucket {Bucket} exists")
-                exists = True
-        except BucketNotFound:
-            log.info(f"{Key} not found in {Bucket}")
-        return exists
+# Bind methods to the Client class
+setattr(Client, 'do_request', staticmethod(do_request))
 
-    def download_file(self, Bucket: str, Key: str, Filename: str) -> str:
-        """
-        get_s3_file will download a file from a specified key in a S3 bucket
-        :param Bucket: String method of the request type
-        :param Key: The S3 path of the file to download
-        :param Filename: String of the path where to save the file locally
-        :return:
-        """
-        s3_url, s3_key = self.build_vars(Key, Bucket)
-        # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(timezone.utc)
-        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
-        # Create the authorization Signature
-        signature = self.create_aws_signature(date, s3_key, "GET")
-        # Date is needed as part of the authorization
-        headers = {
-            "Authorization": signature,
-            "Date": date,
-            "User-Agent": f"light-s3-client/{__version__}"
-        }
-        # Make the request
-        response = do_request(url=s3_url, headers=headers, stream=True)
-        Client.create_download_folders(Filename)
-        with open(Filename, "wb") as file_handle:
-            for chunk in response.iter_content(chunk_size=128):
-                file_handle.write(chunk)
-        log.info(f"Downloaded key {Key} from bucket {Bucket}")
-        return Filename
+setattr(Client, 'list_objects', buckets_module.list_objects)
+setattr(Client, 'get_object', buckets_module.get_object)
+setattr(Client, 'head_object', buckets_module.head_object)
+setattr(Client, 'get_bucket_keys', staticmethod(buckets_module.get_bucket_keys))
 
-    @staticmethod
-    def create_download_folders(key):
-        if "/" in key:
-            folder, _ = key.rsplit("/", 1)
-            if not os.path.exists(folder):
-                os.makedirs(folder)
+setattr(Client, 'download_file', files_module.download_file)
+setattr(Client, 'upload_fileobj', files_module.upload_fileobj)
+setattr(Client, 'delete_file', files_module.delete_file)
+setattr(Client, 'create_download_folders', staticmethod(files_module.create_download_folders))
 
-    def upload_fileobj(
-        self,
-        Fileobj: Union[bytes, io.BytesIO, io.TextIOWrapper, io.BufferedReader],
-        Bucket: str,
-        Key: str
-    ) -> Union[requests.Response, None]:
-        """
-        upload_fileobj uploads a file to a S3 Bucket
-        :param Bucket: The S3 Bucket name
-        :param Key: String path of where the file is uploaded to
-        :param Fileobj: takes either a bytes object or file-like object to upload
-        :return:
-        """
-        s3_url, s3_key = self.build_vars(Key, Bucket)
-        # Accept bytes, io.BytesIO, io.BufferedReader, io.TextIOWrapper
-        if isinstance(Fileobj, (io.BytesIO, io.BufferedReader, io.TextIOWrapper)):
-            data = Fileobj
-        elif isinstance(Fileobj, (bytes, bytearray)):
-            data = io.BytesIO(Fileobj)
-        else:
-            log.error("Fileobj must be bytes, bytearray, io.BytesIO, io.BufferedReader, or io.TextIOWrapper")
-            return None
-        # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(timezone.utc)
-        date = date.strftime("%a, %d %b %Y %H:%M:%S +0000")
-        # Create the authorization Signature
-        signature = self.create_aws_signature(date, s3_key, "PUT")
-        # Date is needed as part of the authorization
-        headers = {
-            "Authorization": signature,
-            "Date": date,
-            "User-Agent": f"light-s3-client/{__version__}"
-        }
-        # Make the request
-        response = do_request(url=s3_url, headers=headers, data=data, method="PUT")
-        log.info(f"Uploaded key {Key} to bucket {Bucket}")
-        return response
+setattr(Client, 'put_object_tagging', objects_module.put_object_tagging)
+setattr(Client, 'get_object_tagging', objects_module.get_object_tagging)
 
-    def delete_file(self, Bucket: str, Key: str) -> bool:
-        """
-        delete_file will delete the file from the bucket
-        :param Bucket: The S3 Bucket name
-        :param Key: Filename of the file to delete
-        :return:
-        """
-        s3_url, s3_key = self.build_vars(Key, Bucket)
-        # Current time needs to be within 10 minutes of the S3 Server
-        date = datetime.now(timezone.utc)
-        date = date.strftime(self.date_format)
-        # Create the authorization Signature
-        signature = self.create_aws_signature(date, s3_key, "DELETE")
-        # Date is needed as part of the authorization
-        headers = {
-            "Authorization": signature,
-            "Date": date,
-            "User-Agent": f"light-s3-client/{__version__}"
-        }
-        # Make the request
-        is_error = False
-        response = do_request(url=s3_url, headers=headers, method="DELETE")
-        if response.status_code == 204:
-            log.info(f"Deleted {Key} from {Bucket}")
-        return is_error
+setattr(Client, 'upload_file_multipart', multipart_module.upload_file_multipart)
+setattr(Client, '_abort_multipart_upload', multipart_module._abort_multipart_upload)
 
-    def create_aws_signature(self, date, key, method) -> str:
-        """
-        create_aws_signature using the logic documented at
-        https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html#signing-request-intro
-        to generate the signature for authorization of the REST API.
-        :param date: Current date string needed as part of the signing method
-        :param key: String path of where the file will be accessed
-        :param method: String method of the type of request
-        :return:
-        """
-        string_to_sign = f"{method}\n\n\n{date}\n/{key}".encode(
-            "UTF-8")
-        # log.error(string_to_sign)
-        signature = base64.encodebytes(
-            hmac.new(
-                self.secret_key.encode("UTF-8"), string_to_sign, sha1
-            ).digest()
-        ).strip()
-        signature = f"AWS {self.access_key}:{signature.decode()}"
-        # log.error(signature)
-        return signature
-
-    def build_vars(self, file_name: str, bucket_name) -> tuple[str, str]:
-        s3_url = f"{self._get_server_url()}/{bucket_name}/{file_name}"
-        s3_key = f"{bucket_name}/{file_name}"
-        return s3_url, s3_key
+setattr(Client, 'create_aws_signature', auth_module.create_aws_signature)
+setattr(Client, '_get_current_date', auth_module._get_current_date)
+setattr(Client, '_get_server_url', auth_module._get_server_url)
+setattr(Client, 'build_vars', auth_module.build_vars)

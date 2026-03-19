@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: light-s3-client-minio
+    ports:
+      - "5000:9000"
+      - "5001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  mc:
+    image: minio/mc:latest
+    container_name: light-s3-client-mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: |
+      /bin/sh -c "
+        mc alias set myminio http://minio:9000 minioadmin minioadmin;
+        mc mb myminio/test-bucket;
+        mc policy set public myminio/test-bucket;
+        exit 0
+      "
+
+volumes:
+  minio_data:
