@@ -79,5 +79,7 @@ This file contains a summary of completed updates and changes to the light-s3-cl
 
 ## Version 0.0.35 Updates
 
-- Fixed GitHub Actions workflow failure: `hatch build` failed with `module 'virtualenv.discovery.builtin' has no attribute 'propose_interpreters'` because `python-version: '3.x'` resolved to Python 3.14, which is incompatible with the `virtualenv` bundled in `hatch==1.14.0`
+- Fixed GitHub Actions workflow failure: `hatch build` failed with `module 'virtualenv.discovery.builtin' has no attribute 'propose_interpreters'` because pinned `hatch==1.14.0` bundled a `virtualenv` incompatible with newer environments
 - Pinned `python-version` to `'3.13'` in `python-publish-test.yml` and `python-publish.yml` workflows
+- Removed version pins on `hatch` and `hatchling` in both publish workflows to let pip resolve compatible dependency versions
+- Removed redundant `pip install hatchling` from the build step in `python-publish.yml`
