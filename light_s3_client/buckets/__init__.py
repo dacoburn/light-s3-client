@@ -13,10 +13,14 @@ log = logging.getLogger("light-s3-client")
 
 def list_objects(self, Bucket: str, Prefix: str) -> list:
     """
-    list_objects lists all keys in an S3 bucket with a given prefix.
-    :param Bucket: The name of the bucket to list objects from
-    :param Prefix: The prefix to use for filtering keys
-    :return: List of object keys
+    List all keys in an S3 bucket with a given prefix.
+    
+    Args:
+        Bucket (str): The name of the bucket to list objects from
+        Prefix (str): The prefix to use for filtering keys
+        
+    Returns:
+        list: List of object keys matching the prefix
     """
     s3_url = f"{self._get_server_url()}/{Bucket}/?list-type=2&prefix={Prefix}"
     s3_key = f"{Bucket}/"
@@ -39,10 +43,14 @@ def list_objects(self, Bucket: str, Prefix: str) -> list:
 
 def get_object(self, Bucket: str, Key: str) -> bool:
     """
-    get_object checks if an S3 object exists.
-    :param Bucket: The name of the bucket to check
-    :param Key: The key to check for existence
-    :return: True if object exists, False otherwise
+    Check if an S3 object exists.
+    
+    Args:
+        Bucket (str): The name of the bucket to check
+        Key (str): The key to check for existence
+        
+    Returns:
+        bool: True if object exists, False otherwise
     """
     s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
     s3_key = f"{Bucket}/{Key}"
@@ -70,10 +78,14 @@ def get_object(self, Bucket: str, Key: str) -> bool:
 
 def head_object(self, Bucket: str, Key: str) -> dict:
     """
-    head_object checks if an S3 object exists and returns metadata.
-    :param Bucket: The S3 Bucket name
-    :param Key: The S3 key to check
-    :return: Dictionary containing object metadata
+    Check if an S3 object exists and return its metadata.
+    
+    Args:
+        Bucket (str): The S3 Bucket name
+        Key (str): The S3 key to check
+        
+    Returns:
+        dict: Dictionary containing object metadata, or empty dict if object doesn't exist
     """
     s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
     s3_key = f"{Bucket}/{Key}"

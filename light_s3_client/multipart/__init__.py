@@ -23,13 +23,18 @@ def upload_file_multipart(
     max_parts: int = 10000
 ) -> requests.Response:
     """
-    upload_file_multipart uploads a file to S3 using multipart upload for large files.
-    :param Bucket: The S3 Bucket name
-    :param Key: String path of where the file is uploaded to
-    :param Fileobj: takes either a bytes object or file-like object to upload
-    :param part_size: Size of each part in bytes (default 5MB)
-    :param max_parts: Maximum number of parts allowed (default 10000)
-    :return: Response object from the upload request
+    Upload a file to S3 using multipart upload for large files. Falls back to regular upload 
+    if the file is smaller than part_size.
+    
+    Args:
+        Fileobj: A file-like object or bytes to upload
+        Bucket (str): The name of the bucket to upload to
+        Key (str): The name of the key to upload to
+        part_size (int, optional): Size of each part in bytes. Default is 5MB (5242880)
+        max_parts (int, optional): Maximum number of parts allowed. Default is 10000
+        
+    Returns:
+        requests.Response: Response object from the upload request
     """
     # Check if file size is small enough to use regular upload
     if hasattr(Fileobj, 'seek') and hasattr(Fileobj, 'tell'):

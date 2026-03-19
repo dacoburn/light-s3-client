@@ -108,6 +108,124 @@ s3 = Client(
     access_key="REPLACE_ME",
     secret_key="REPLACE_ME"
 )
+result = s3.delete_file("example-bucket", "path/example.json")
+print(f"Delete result: {result}")  # True if successful, False otherwise
+```
+
+### Client.list_objects(Bucket, Prefix)
+
+List all keys in an S3 bucket with a given prefix.
+
+**Usage:**
+
+```python
+from light_s3_client import Client
+
+s3 = Client(
+    region="us-west-1",
+    access_key="REPLACE_ME",
+    secret_key="REPLACE_ME"
+)
+objects = s3.list_objects("example-bucket", "path/")
+print(f"Found {len(objects)} objects")
+```
+
+### Client.get_object(Bucket, Key)
+
+Check if an S3 object exists. Returns `True` if the object exists, `False` otherwise.
+
+**Usage:**
+
+```python
+from light_s3_client import Client
+
+s3 = Client(
+    region="us-west-1",
+    access_key="REPLACE_ME",
+    secret_key="REPLACE_ME"
+)
+exists = s3.get_object("example-bucket", "path/example.json")
+print(f"Object exists: {exists}")  # True if exists, False otherwise
+```
+
+### Client.head_object(Bucket, Key)
+
+Check if an S3 object exists and return its metadata. Returns a dictionary with metadata if the object exists, or an empty dictionary otherwise.
+
+**Usage:**
+
+```python
+from light_s3_client import Client
+
+s3 = Client(
+    region="us-west-1",
+    access_key="REPLACE_ME",
+    secret_key="REPLACE_ME"
+)
+metadata = s3.head_object("example-bucket", "path/example.json")
+print(f"Object metadata: {metadata}")  # Dictionary with metadata or empty dict
+```
+
+### Client.put_object_tagging(Bucket, Key, Tags)
+
+Set tags for an S3 object. Returns `True` if successful, `False` otherwise.
+
+**Usage:**
+
+```python
+from light_s3_client import Client
+
+s3 = Client(
+    region="us-west-1",
+    access_key="REPLACE_ME",
+    secret_key="REPLACE_ME"
+)
+tags = {"Environment": "Production", "Owner": "John Doe"}
+result = s3.put_object_tagging("example-bucket", "path/example.json", tags)
+print(f"Tagging result: {result}")  # True if successful, False otherwise
+```
+
+### Client.get_object_tagging(Bucket, Key)
+
+Retrieve tags for an S3 object. Returns a dictionary of tag key-value pairs if successful, or an empty dictionary otherwise.
+
+**Usage:**
+
+```python
+from light_s3_client import Client
+
+s3 = Client(
+    region="us-west-1",
+    access_key="REPLACE_ME",
+    secret_key="REPLACE_ME"
+)
+tags = s3.get_object_tagging("example-bucket", "path/example.json")
+print(f"Object tags: {tags}")  # Dictionary with tags or empty dict
+```
+
+## Client Initialization Parameters
+
+| Property | Required | Type   | Description |
+|----------|----------|--------|-------------|
+| region     | True     | string | The S3 region being used |
+| access_key | True     | string | The AWS Access Key for API Access |
+| secret_key | True     | string | The AWS Secret Key for API Access |
+| server     | False    | string | An override of the HTTPS URL to use |
+
+## Authentication
+
+This library implements AWS Signature Version 4 authentication directly, without relying on the Boto3 SDK. It handles all the necessary cryptographic operations to authenticate requests to S3-compatible services.
+
+**Usage:**
+
+```python
+from light_s3_client import Client
+
+s3 = Client(
+    region="us-west-1",
+    access_key="REPLACE_ME",
+    secret_key="REPLACE_ME"
+)
 deleted = s3.delete_file("example-bucket", "path/example.json")
 ```
 

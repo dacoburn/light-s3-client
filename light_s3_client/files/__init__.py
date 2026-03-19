@@ -16,11 +16,15 @@ log = logging.getLogger("light-s3-client")
 
 def download_file(self, Bucket: str, Key: str, Filename: str) -> str:
     """
-    download_file downloads an S3 object to a local file.
-    :param Bucket: The name of the bucket to download from
-    :param Key: The name of the key to download from
-    :param Filename: The path to the file to download to
-    :return: The path to the downloaded file
+    Download an S3 object to a local file.
+    
+    Args:
+        Bucket (str): The name of the bucket to download from
+        Key (str): The name of the key to download from
+        Filename (str): The path to the file to download to
+        
+    Returns:
+        str: The path to the downloaded file
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
     # Current time needs to be within 10 minutes of the S3 Server
@@ -50,11 +54,16 @@ def upload_fileobj(
     Key: str
 ) -> requests.Response:
     """
-    upload_fileobj uploads a file to a S3 Bucket.
-    :param Bucket: The S3 Bucket name
-    :param Key: String path of where the file is uploaded to
-    :param Fileobj: takes either a bytes object or file-like object to upload
-    :return: Response object from the upload request
+    Upload a file object to S3.
+    
+    Args:
+        Fileobj (io.BytesIO, bytes, bytearray, io.BufferedReader, or io.TextIOWrapper): 
+            A file-like object or bytes to upload
+        Bucket (str): The name of the bucket to upload to
+        Key (str): The name of the key to upload to
+        
+    Returns:
+        requests.Response: Response object from the upload request
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
     # Accept bytes, io.BytesIO, io.BufferedReader, io.TextIOWrapper
@@ -93,10 +102,14 @@ def upload_fileobj(
 
 def delete_file(self, Bucket: str, Key: str) -> bool:
     """
-    delete_file will delete the file from the bucket.
-    :param Bucket: The S3 Bucket name
-    :param Key: Filename of the file to delete
-    :return: True if successful, False otherwise
+    Delete an S3 object.
+    
+    Args:
+        Bucket (str): The name of the bucket to delete from
+        Key (str): The name of the key to delete
+        
+    Returns:
+        bool: True if successful, False otherwise
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
     # Current time needs to be within 10 minutes of the S3 Server

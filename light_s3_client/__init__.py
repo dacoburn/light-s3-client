@@ -119,6 +119,28 @@ def do_request(
 
 
 class Client:
+    """
+    A lightweight S3 client for interacting with Amazon S3 or S3-compatible services.
+    
+    This client provides a simplified interface to S3 operations without requiring the full Boto3 SDK.
+    It implements AWS Signature Version 4 authentication directly using the requests library.
+    
+    Args:
+        access_key (str): The AWS Access Key for API Access
+        secret_key (str): The AWS Secret Key for API Access
+        region (str): The S3 region being used
+        server (str, optional): An override of the HTTPS URL to use. Defaults to None.
+        encryption (str, optional): The encryption algorithm to use for uploads. Defaults to "AES256".
+        
+    Attributes:
+        region (str): The S3 region being used
+        server (str): The S3 server URL
+        base_url (str): The base S3 URL
+        access_key (str): The AWS Access Key
+        secret_key (str): The AWS Secret Key
+        date_format (str): The date format used for requests
+        encryption (str): The encryption algorithm to use for uploads
+    """
     server: str
     bucket_name: str
     access_key: str

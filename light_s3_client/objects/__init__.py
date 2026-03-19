@@ -14,11 +14,15 @@ log = logging.getLogger("light-s3-client")
 
 def put_object_tagging(self, Bucket: str, Key: str, Tags: dict) -> bool:
     """
-    put_object_tagging sets tags for an S3 object.
-    :param Bucket: The S3 Bucket name
-    :param Key: The S3 key to tag
-    :param Tags: Dictionary of tag key-value pairs
-    :return: True if successful, False otherwise
+    Set tags for an S3 object.
+    
+    Args:
+        Bucket (str): The name of the bucket
+        Key (str): The key of the object to tag
+        Tags (dict): Dictionary of tag key-value pairs
+        
+    Returns:
+        bool: True if successful, False otherwise
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
     date = self._get_current_date()
@@ -55,10 +59,14 @@ def put_object_tagging(self, Bucket: str, Key: str, Tags: dict) -> bool:
 
 def get_object_tagging(self, Bucket: str, Key: str) -> dict:
     """
-    get_object_tagging retrieves tags for an S3 object.
-    :param Bucket: The S3 Bucket name
-    :param Key: The S3 key to get tags for
-    :return: Dictionary of tag key-value pairs
+    Retrieve tags for an S3 object.
+    
+    Args:
+        Bucket (str): The name of the bucket
+        Key (str): The key of the object to retrieve tags for
+        
+    Returns:
+        dict: Dictionary of tag key-value pairs
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
     date = self._get_current_date()

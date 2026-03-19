@@ -12,13 +12,17 @@ from ..version import __version__
 
 def create_aws_signature(self, date, key, method) -> str:
     """
-    create_aws_signature using the logic documented at
-    https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html#signing-request-intro
-    to generate the signature for authorization of the REST API.
-    :param date: Current date string needed as part of the signing method
-    :param key: String path of where the file will be accessed
-    :param method: String method of the type of request
-    :return: The AWS signature string
+    Create AWS Signature Version 4 for S3 authentication.
+    
+    Implements the AWS Signature Version 4 signing process as documented in the AWS S3 API.
+    
+    Args:
+        date (str): Current date string needed as part of the signing method
+        key (str): String path of where the file will be accessed
+        method (str): String method of the type of request (GET, PUT, DELETE, etc.)
+        
+    Returns:
+        str: The AWS signature string
     """
     string_to_sign = f"{method}\n\n\n{date}\n/{key}".encode(
         "UTF-8")
@@ -35,8 +39,10 @@ def create_aws_signature(self, date, key, method) -> str:
 
 def _get_current_date(self):
     """
-    _get_current_date gets the current date in the required format.
-    :return: Formatted date string
+    Get the current date in the required format for AWS signature.
+    
+    Returns:
+        str: Formatted date string in UTC
     """
     date = datetime.now(timezone.utc)
     return date.strftime("%a, %d %b %Y %H:%M:%S +0000")
@@ -44,8 +50,10 @@ def _get_current_date(self):
 
 def _get_server_url(self):
     """
-    _get_server_url returns the server URL, ensuring it has a scheme.
-    :return: Formatted server URL
+    Get the server URL, ensuring it has a scheme.
+    
+    Returns:
+        str: Formatted server URL
     """
     # Returns the server URL, ensuring it has a scheme
     if self.server:
@@ -59,10 +67,14 @@ def _get_server_url(self):
 
 def build_vars(self, file_name: str, bucket_name) -> tuple[str, str]:
     """
-    build_vars constructs the S3 URL and key for a given file and bucket.
-    :param file_name: The name of the file
-    :param bucket_name: The name of the bucket
-    :return: Tuple of (s3_url, s3_key)
+    Construct the S3 URL and key for a given file and bucket.
+    
+    Args:
+        file_name (str): The name of the file
+        bucket_name (str): The name of the bucket
+        
+    Returns:
+        tuple[str, str]: Tuple of (s3_url, s3_key)
     """
     s3_url = f"{self._get_server_url()}/{bucket_name}/{file_name}"
     s3_key = f"{bucket_name}/{file_name}"
