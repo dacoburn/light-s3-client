@@ -3,7 +3,6 @@ Bucket-related operations for the light-s3-client.
 This module contains functions for managing S3 buckets.
 """
 
-from .. import Client
 from ..exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
 from ..version import __version__
 import logging
@@ -23,21 +22,15 @@ def list_objects(self, Bucket: str, Prefix: str) -> list:
         list: List of object keys matching the prefix
     """
     s3_url = f"{self._get_server_url()}/{Bucket}/?list-type=2&prefix={Prefix}"
-    s3_key = f"{Bucket}/"
-    # Current time needs to be within 10 minutes of the S3 Server
-    date = self._get_current_date()
-    # Create the authorization Signature
-    signature = self.create_aws_signature(date, s3_key, "GET")
-    # Date is needed as part of the authorization
     headers = {
-        "Authorization": signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}"
     }
+    auth_headers = self.create_aws_signature("GET", s3_url, headers)
+    headers.update(auth_headers)
     # Make the request
     response = self.do_request(url=s3_url, headers=headers)
     log.info(f"Retrieved keys for bucket {Bucket} with prefix {Prefix}")
-    data = Client.get_bucket_keys(response.text, Prefix)
+    data = get_bucket_keys(response.text, Prefix)
     return data
 
 
@@ -53,17 +46,11 @@ def get_object(self, Bucket: str, Key: str) -> bool:
         bool: True if object exists, False otherwise
     """
     s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
-    s3_key = f"{Bucket}/{Key}"
-    # Current time needs to be within 10 minutes of the S3 Server
-    date = self._get_current_date()
-    # Create the authorization Signature
-    signature = self.create_aws_signature(date, s3_key, "GET")
-    # Date is needed as part of the authorization
     headers = {
-        "Authorization": signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}"
     }
+    auth_headers = self.create_aws_signature("GET", s3_url, headers)
+    headers.update(auth_headers)
     # Make the request
     exists = False
     try:
@@ -88,17 +75,11 @@ def head_object(self, Bucket: str, Key: str) -> dict:
         dict: Dictionary containing object metadata, or empty dict if object doesn't exist
     """
     s3_url = f"{self._get_server_url()}/{Bucket}/{Key}"
-    s3_key = f"{Bucket}/{Key}"
-    # Current time needs to be within 10 minutes of the S3 Server
-    date = self._get_current_date()
-    # Create the authorization Signature
-    signature = self.create_aws_signature(date, s3_key, "HEAD")
-    # Date is needed as part of the authorization
     headers = {
-        "Authorization": signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}"
     }
+    auth_headers = self.create_aws_signature("HEAD", s3_url, headers)
+    headers.update(auth_headers)
     # Make the request
     response = self.do_request(url=s3_url, headers=headers, method="HEAD")
     if response.status_code == 200:

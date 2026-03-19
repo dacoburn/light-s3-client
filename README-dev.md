@@ -2,6 +2,34 @@
 
 This document contains information about testing for developers working on the light-s3-client library.
 
+## Development Setup
+
+This project uses `uv` for dependency management. To set up the development environment:
+
+```bash
+# Install dependencies and create venv
+uv sync
+
+# Install with dev dependencies
+uv sync --extra dev
+```
+
+Alternatively, you can use pip with a virtual environment:
+
+```bash
+# Create virtual environment
+python -m venv .venv
+
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+
+# Activate virtual environment (Linux/Mac)
+source .venv/bin/activate
+
+# Install dev dependencies
+pip install -e ".[dev]"
+```
+
 ## Running Tests
 
 To run all tests, you can use the following methods:
@@ -25,11 +53,16 @@ To run all tests, you can use the following methods:
 
 Unit tests are located in `tests/test_unit.py` and integration tests in `tests/test_integration.py`. The tests include mock testing capabilities to enable offline testing without a real S3 connection.
 
-## Development Setup
+## Development Dependencies
 
-For development, you can install the development dependencies with:
+For development, install with dev extras:
 ```bash
-pip install -e .[dev]
+uv sync --extra dev
+```
+
+Or with pip:
+```bash
+pip install -e ".[dev]"
 ```
 
 This will install pytest, pytest-cov, black, flake8, and python-dotenv which are needed for development and testing.

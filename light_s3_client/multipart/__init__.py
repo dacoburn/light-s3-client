@@ -3,7 +3,6 @@ Multipart upload operations for the light-s3-client.
 This module contains functions for handling large file uploads using multipart upload.
 """
 
-from .. import Client
 from ..exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
 from ..version import __version__
 import logging
@@ -57,23 +56,21 @@ def upload_file_multipart(
     s3_url, s3_key = self.build_vars(Key, Bucket)
     
     # Step 1: Initiate multipart upload
-    date = self._get_current_date()
-    signature = self.create_aws_signature(date, s3_key, "POST")
-    
+    init_url = f"{s3_url}?uploads"
+    init_data = "<InitiateMultipartUploadResult></InitiateMultipartUploadResult>"
     headers = {
-        "Authorization": signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}",
         "Content-Type": "application/xml"
     }
+    auth_headers = self.create_aws_signature("POST", init_url, headers, init_data)
+    headers.update(auth_headers)
     
     # Create initiate multipart upload request
-    init_url = f"{s3_url}?uploads"
     init_response = self.do_request(
         url=init_url, 
         headers=headers, 
         method="POST",
-        data="<InitiateMultipartUploadResult></InitiateMultipartUploadResult>"
+        data=init_data
     )
     
     if init_response.status_code != 200:
@@ -111,15 +108,14 @@ def upload_file_multipart(
             break
             
         # Upload part
-        part_signature = self.create_aws_signature(date, s3_key, "PUT")
+        part_url = f"{s3_url}?partNumber={part_number}&uploadId={upload_id}"
         part_headers = {
-            "Authorization": part_signature,
-            "Date": date,
             "User-Agent": f"light-s3-client/{__version__}",
             "Content-Type": "application/octet-stream"
         }
+        auth_headers = self.create_aws_signature("PUT", part_url, part_headers, part_data)
+        part_headers.update(auth_headers)
         
-        part_url = f"{s3_url}?partNumber={part_number}&uploadId={upload_id}"
         part_response = self.do_request(
             url=part_url,
             headers=part_headers,
@@ -154,15 +150,14 @@ def upload_file_multipart(
         complete_xml += f'<Part><ETag>{part["ETag"]}</ETag><PartNumber>{part["PartNumber"]}</PartNumber></Part>'
     complete_xml += "</CompleteMultipartUpload>"
     
-    complete_signature = self.create_aws_signature(date, s3_key, "POST")
+    complete_url = f"{s3_url}?uploadId={upload_id}"
     complete_headers = {
-        "Authorization": complete_signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}",
         "Content-Type": "application/xml"
     }
+    auth_headers = self.create_aws_signature("POST", complete_url, complete_headers, complete_xml)
+    complete_headers.update(auth_headers)
     
-    complete_url = f"{s3_url}?uploadId={upload_id}"
     complete_response = self.do_request(
         url=complete_url,
         headers=complete_headers,
@@ -188,16 +183,13 @@ def _abort_multipart_upload(self, Bucket: str, Key: str, upload_id: str) -> None
     :param upload_id: The upload ID to abort
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
-    date = self._get_current_date()
-    signature = self.create_aws_signature(date, s3_key, "DELETE")
-    
+    abort_url = f"{s3_url}?uploadId={upload_id}"
     headers = {
-        "Authorization": signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}"
     }
+    auth_headers = self.create_aws_signature("DELETE", abort_url, headers)
+    headers.update(auth_headers)
     
-    abort_url = f"{s3_url}?uploadId={upload_id}"
     self.do_request(url=abort_url, headers=headers, method="DELETE")
     
     log.info(f"Aborted multipart upload for {Key} in bucket {Bucket}")

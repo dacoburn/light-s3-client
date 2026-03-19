@@ -3,7 +3,6 @@ Object-related operations for the light-s3-client.
 This module contains functions for managing S3 object tags.
 """
 
-from .. import Client
 from ..exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
 from ..version import __version__
 import logging
@@ -25,15 +24,6 @@ def put_object_tagging(self, Bucket: str, Key: str, Tags: dict) -> bool:
         bool: True if successful, False otherwise
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
-    date = self._get_current_date()
-    signature = self.create_aws_signature(date, s3_key, "PUT")
-    
-    headers = {
-        "Authorization": signature,
-        "Date": date,
-        "User-Agent": f"light-s3-client/{__version__}",
-        "Content-Type": "application/xml"
-    }
     
     # Create XML for tags
     tag_xml = "<Tagging><TagSet>"
@@ -42,6 +32,13 @@ def put_object_tagging(self, Bucket: str, Key: str, Tags: dict) -> bool:
     tag_xml += "</TagSet></Tagging>"
     
     tag_url = f"{s3_url}?tagging"
+    headers = {
+        "User-Agent": f"light-s3-client/{__version__}",
+        "Content-Type": "application/xml"
+    }
+    auth_headers = self.create_aws_signature("PUT", tag_url, headers, tag_xml)
+    headers.update(auth_headers)
+    
     response = self.do_request(
         url=tag_url,
         headers=headers,
@@ -69,16 +66,14 @@ def get_object_tagging(self, Bucket: str, Key: str) -> dict:
         dict: Dictionary of tag key-value pairs
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
-    date = self._get_current_date()
-    signature = self.create_aws_signature(date, s3_key, "GET")
-    
-    headers = {
-        "Authorization": signature,
-        "Date": date,
-        "User-Agent": f"light-s3-client/{__version__}"
-    }
     
     tag_url = f"{s3_url}?tagging"
+    headers = {
+        "User-Agent": f"light-s3-client/{__version__}"
+    }
+    auth_headers = self.create_aws_signature("GET", tag_url, headers)
+    headers.update(auth_headers)
+    
     response = self.do_request(
         url=tag_url,
         headers=headers,

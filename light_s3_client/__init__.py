@@ -18,7 +18,6 @@ import logging
 from typing import Union, Optional, TYPE_CHECKING
 from .version import __version__
 from .exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
-from . import buckets, files, objects, auth, multipart
 
 __author__ = 'socket.dev'
 __all__ = [
@@ -148,13 +147,15 @@ class Client:
     date_format: str
     region: str
     base_url: str
+    signature_version: str
 
     def __init__(self,
                  access_key: str,
                  secret_key: str,
                  region: str,
                  server: Optional[str] = None,
-                 encryption="AES256") -> None:
+                 encryption="AES256",
+                 signature_version: str = "v4") -> None:
         self.region = region
         self.base_url = "s3.amazonaws.com"
         if server is None:
@@ -165,6 +166,7 @@ class Client:
         self.secret_key = secret_key
         self.date_format = "%a, %d %b %Y %H:%M:%S +0000"
         self.encryption = encryption
+        self.signature_version = signature_version
 
     if TYPE_CHECKING:
         @staticmethod
@@ -192,7 +194,7 @@ class Client:
         def get_object_tagging(self, Bucket: str, Key: str) -> dict: ...
         def upload_file_multipart(self, Fileobj: Union[io.BytesIO, bytes, bytearray], Bucket: str, Key: str, part_size: int = 5242880, max_parts: int = 10000) -> Optional[Response]: ...
         def _abort_multipart_upload(self, Bucket: str, Key: str, upload_id: str) -> None: ...
-        def create_aws_signature(self, date: str, key: str, method: str) -> str: ...
+        def create_aws_signature(self, method: str, url: str, headers: dict, payload=None) -> dict: ...
         def _get_current_date(self) -> str: ...
         def _get_server_url(self) -> str: ...
         def build_vars(self, file_name: str, bucket_name: str) -> tuple[str, str]: ...

@@ -10,10 +10,11 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-S3_SERVER = os.getenv("s3_server")
-S3_ACCESS_KEY = os.getenv("s3_access_key")
-S3_SECRET_KEY = os.getenv("s3_secret_key")
-S3_BUCKET = os.getenv("s3_bucket")
+# Use default credentials if environment variables are not set
+S3_SERVER = os.getenv("s3_server", "http://localhost:5000")
+S3_ACCESS_KEY = os.getenv("s3_access_key", "minioadmin")
+S3_SECRET_KEY = os.getenv("s3_secret_key", "minioadmin")
+S3_BUCKET = os.getenv("s3_bucket", "test-bucket")
 S3_REGION = os.getenv("s3_region", "us-east-1")
 
 @pytest.fixture(scope="module")

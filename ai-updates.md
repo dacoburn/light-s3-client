@@ -62,3 +62,17 @@ This file contains a summary of completed updates and changes to the light-s3-cl
 - Enhanced integration test coverage in tests/test_integration.py with better structure and test cases
 - Created docker-compose.yml file that sets up a S3-compatible service (MinIO) for testing with proper configuration
 - Added comprehensive integration tests using S3 service to test all module functions in proper order: create bucket, put test files, get files, delete files, delete bucket
+
+## Version 0.0.34 Updates
+
+- Fixed circular import issue in sub-modules (`buckets`, `files`, `objects`, `multipart` were importing `Client` from parent during module load, creating a cycle)
+- Removed redundant early `from . import` in `__init__.py` (submodules are already imported after `Client` is defined)
+- Added `S3Error` base exception class; `BucketNotFound`, `AccessDeniedToBucket`, and `UnknownBucketError` now inherit from it
+- Removed stale `setup.cfg` (superseded by `pyproject.toml`)
+- Implemented proper AWS Signature Version 4 authentication (previously was V2 despite docstrings claiming V4)
+  - V4 implements canonical request, signing key derivation, `X-Amz-Date`, and `X-Amz-Content-SHA256` headers
+  - Added `signature_version` parameter to `Client.__init__` (default `"v4"`, supports `"v2"` for legacy)
+  - Updated all 12 call sites across `buckets`, `files`, `objects`, and `multipart` modules
+  - `create_aws_signature` now takes `(method, url, headers, payload)` and returns a dict of auth headers
+- Switched to `uv` for dependency management (`uv sync` / `uv.lock`)
+- Added Python 3.12 and 3.13 classifiers to `pyproject.toml`

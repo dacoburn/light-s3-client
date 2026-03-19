@@ -205,26 +205,44 @@ print(f"Object tags: {tags}")  # Dictionary with tags or empty dict
 
 ## Client Initialization Parameters
 
-| Property | Required | Type   | Description |
-|----------|----------|--------|-------------|
-| region     | True     | string | The S3 region being used |
-| access_key | True     | string | The AWS Access Key for API Access |
-| secret_key | True     | string | The AWS Secret Key for API Access |
-| server     | False    | string | An override of the HTTPS URL to use |
+| Property | Required | Type   | Default | Description |
+|----------|----------|--------|---------|-------------|
+| region     | True     | string | | The S3 region being used |
+| access_key | True     | string | | The AWS Access Key for API Access |
+| secret_key | True     | string | | The AWS Secret Key for API Access |
+| server     | False    | string | None | An override of the HTTPS URL to use |
+| encryption | False    | string | "AES256" | The encryption algorithm to use for uploads |
+| signature_version | False | string | "v4" | AWS signature version ("v2" or "v4") |
 
 ## Authentication
 
-This library implements AWS Signature Version 4 authentication directly, without relying on the Boto3 SDK. It handles all the necessary cryptographic operations to authenticate requests to S3-compatible services.
+This library implements AWS Signature Version 4 authentication by default, following the same signing standard as boto3. Legacy Signature Version 2 is also supported.
 
 **Usage:**
 
 ```python
 from light_s3_client import Client
 
+# Default: Signature V4 (recommended, works with AWS and modern MinIO)
 s3 = Client(
     region="us-west-1",
     access_key="REPLACE_ME",
     secret_key="REPLACE_ME"
 )
-deleted = s3.delete_file("example-bucket", "path/example.json")
+
+# Legacy: Signature V2 (for older S3-compatible services)
+s3 = Client(
+    region="us-west-1",
+    access_key="REPLACE_ME",
+    secret_key="REPLACE_ME",
+    signature_version="v2"
+)
+
+# Custom S3-compatible server (e.g. MinIO)
+s3 = Client(
+    region="us-east-1",
+    access_key="minioadmin",
+    secret_key="minioadmin",
+    server="http://localhost:9000"
+)
 ```

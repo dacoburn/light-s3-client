@@ -3,7 +3,6 @@ File-related operations for the light-s3-client.
 This module contains functions for uploading, downloading, and deleting files.
 """
 
-from .. import Client
 from ..exceptions import UnknownBucketError, BucketNotFound, AccessDeniedToBucket
 from ..version import __version__
 import logging
@@ -27,19 +26,14 @@ def download_file(self, Bucket: str, Key: str, Filename: str) -> str:
         str: The path to the downloaded file
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
-    # Current time needs to be within 10 minutes of the S3 Server
-    date = self._get_current_date()
-    # Create the authorization Signature
-    signature = self.create_aws_signature(date, s3_key, "GET")
-    # Date is needed as part of the authorization
     headers = {
-        "Authorization": signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}"
     }
+    auth_headers = self.create_aws_signature("GET", s3_url, headers)
+    headers.update(auth_headers)
     # Make the request
     response = self.do_request(url=s3_url, headers=headers, stream=True)
-    Client.create_download_folders(Filename)
+    create_download_folders(Filename)
     with open(Filename, "wb") as file_handle:
         for chunk in response.iter_content(chunk_size=128):
             file_handle.write(chunk)
@@ -74,24 +68,19 @@ def upload_fileobj(
     else:
         log.error("Fileobj must be bytes, bytearray, io.BytesIO, io.BufferedReader, or io.TextIOWrapper")
         return None
-    # Current time needs to be within 10 minutes of the S3 Server
-    date = self._get_current_date()
-    # Create the authorization Signature
-    signature = self.create_aws_signature(date, s3_key, "PUT")
-    # Date is needed as part of the authorization
-    headers = {
-        "Authorization": signature,
-        "Date": date,
-        "User-Agent": f"light-s3-client/{__version__}"
-    }
     
     # Set Content-Type based on file extension or default to application/octet-stream
     import mimetypes
     content_type, _ = mimetypes.guess_type(Key)
-    if content_type:
-        headers["Content-Type"] = content_type
-    else:
-        headers["Content-Type"] = "application/octet-stream"
+    if not content_type:
+        content_type = "application/octet-stream"
+    
+    headers = {
+        "User-Agent": f"light-s3-client/{__version__}",
+        "Content-Type": content_type
+    }
+    auth_headers = self.create_aws_signature("PUT", s3_url, headers, data)
+    headers.update(auth_headers)
         
     # Make the request
     response = self.do_request(url=s3_url, headers=headers, data=data, method="PUT")
@@ -112,16 +101,11 @@ def delete_file(self, Bucket: str, Key: str) -> bool:
         bool: True if successful, False otherwise
     """
     s3_url, s3_key = self.build_vars(Key, Bucket)
-    # Current time needs to be within 10 minutes of the S3 Server
-    date = self._get_current_date()
-    # Create the authorization Signature
-    signature = self.create_aws_signature(date, s3_key, "DELETE")
-    # Date is needed as part of the authorization
     headers = {
-        "Authorization": signature,
-        "Date": date,
         "User-Agent": f"light-s3-client/{__version__}"
     }
+    auth_headers = self.create_aws_signature("DELETE", s3_url, headers)
+    headers.update(auth_headers)
     # Make the request
     response = self.do_request(url=s3_url, headers=headers, method="DELETE")
     if response.status_code == 204:

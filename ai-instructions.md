@@ -12,6 +12,34 @@ The `light-s3-client` is a lightweight Python library for interacting with Amazo
 - **Error Handling**: Provides specific exception types for different error conditions
 - **Cross-platform**: Compatible with Python 3.8+
 
+## Development Setup
+
+This project uses `uv` for dependency management. To set up the development environment:
+
+```bash
+# Install dependencies and create venv
+uv sync
+
+# Install with dev dependencies
+uv sync --extra dev
+```
+
+Alternatively, you can use a standard virtual environment:
+
+```bash
+# Create virtual environment
+python -m venv .venv
+
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+
+# Activate virtual environment (Linux/Mac)
+source .venv/bin/activate
+
+# Install dev dependencies
+pip install -e ".[dev]"
+```
+
 ## Important Notes
 
 - **Always keep `ai-instructions.md` up to date with new functionality**. New updates should go into `ai-updates.md`.
@@ -90,20 +118,23 @@ Retrieves tags for an S3 object.
 
 ## Client Initialization Parameters
 
-| Property | Required | Type   | Description |
-|----------|----------|--------|-------------|
-| region   | True     | string | The S3 region being used |
-| access_key | True   | string | The AWS Access Key for API Access |
-| secret_key | True   | string | The AWS Secret Key for API Access |
-| server   | False    | string | An override of the HTTPS URL to use |
+| Property | Required | Type   | Default | Description |
+|----------|----------|--------|---------|-------------|
+| region   | True     | string | | The S3 region being used |
+| access_key | True   | string | | The AWS Access Key for API Access |
+| secret_key | True   | string | | The AWS Secret Key for API Access |
+| server   | False    | string | None | An override of the HTTPS URL to use |
+| encryption | False  | string | "AES256" | The encryption algorithm to use for uploads |
+| signature_version | False | string | "v4" | AWS signature version to use ("v2" or "v4") |
 
 ## Authentication
 
-The client implements AWS Signature Version 4 authentication as documented in the AWS S3 API documentation. It handles the creation of authorization signatures required for S3 REST API requests.
+The client implements AWS Signature Version 4 authentication by default, following the same standard as boto3. It handles the creation of authorization signatures required for S3 REST API requests. Legacy Signature Version 2 is also supported via the `signature_version="v2"` init parameter.
 
 ## Error Handling
 
-The client raises specific exceptions:
+The client raises specific exceptions (all inherit from `S3Error`):
+- `S3Error`: Base exception class for all S3-related errors
 - `BucketNotFound`: When a bucket cannot be found
 - `AccessDeniedToBucket`: When access to a bucket is denied
 - `UnknownBucketError`: For other bucket-related errors
