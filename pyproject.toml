@@ -1,6 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "light-s3-client"
-version = "0.0.38"
+version = "0.0.39"
 description = "A lightweight S3 client."
 authors = [
 	{ name = "Douglas Coburn", email = "douglas@dactbc.com" }
