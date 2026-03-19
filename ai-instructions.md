@@ -12,6 +12,11 @@ The `light-s3-client` is a lightweight Python library for interacting with Amazo
 - **Error Handling**: Provides specific exception types for different error conditions
 - **Cross-platform**: Compatible with Python 3.8+
 
+## Important Notes
+
+- **Always keep `ai-instructions.md` up to date with new functionality**. New updates should go into `ai-updates.md`.
+- **Completed tasks should be removed from `ai-tasks.md`** and a short summary update should be added to `ai-updates.md`.
+
 ## Supported Functions
 
 ### 1. `download_file(Bucket, Key, Filename)`
@@ -50,6 +55,38 @@ Checks if an S3 object exists.
 **Parameters:**
 - `Bucket` (str): The name of the bucket to check
 - `Key` (str): The key to check for existence
+
+### 6. `upload_file_multipart(Fileobj, Bucket, Key, part_size, max_parts)`
+Upload a file to S3 using multipart upload for large files. Falls back to regular upload if the file is smaller than `part_size`.
+
+**Parameters:**
+- `Fileobj` (file-like object): A file-like object or bytes to upload
+- `Bucket` (str): The name of the bucket to upload to
+- `Key` (str): The name of the key to upload to
+- `part_size` (int, optional): Size of each part in bytes. Default is 5MB (5242880)
+- `max_parts` (int, optional): Maximum number of parts allowed. Default is 10000
+
+### 7. `head_object(Bucket, Key)`
+Checks if an S3 object exists and returns its metadata.
+
+**Parameters:**
+- `Bucket` (str): The name of the bucket to check
+- `Key` (str): The key to check for existence and retrieve metadata
+
+### 8. `put_object_tagging(Bucket, Key, Tags)`
+Sets tags for an S3 object.
+
+**Parameters:**
+- `Bucket` (str): The name of the bucket
+- `Key` (str): The key of the object to tag
+- `Tags` (dict): Dictionary of tag key-value pairs
+
+### 9. `get_object_tagging(Bucket, Key)`
+Retrieves tags for an S3 object.
+
+**Parameters:**
+- `Bucket` (str): The name of the bucket
+- `Key` (str): The key of the object to retrieve tags for
 
 ## Client Initialization Parameters
 
@@ -163,3 +200,9 @@ The client implements direct S3 REST API calls using:
 4. **Custom error handling**: For specific S3 error conditions
 
 The implementation follows AWS documentation for signature creation and handles the necessary headers and authentication for S3 API calls.
+
+## Development Workflow
+
+For development tasks and tracking, please refer to:
+- `ai-tasks.md` - Current tasks and improvements needed
+- `ai-updates.md` - Summary of completed updates and changes
