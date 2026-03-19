@@ -194,6 +194,53 @@ hatch build
 hatch publish
 ```
 
+## CI/CD Workflows (GitHub Actions)
+
+Three workflows live in `.github/workflows/`:
+
+### 1. Version Check (`version-check.yml`)
+- **Trigger:** Pull requests (opened, synchronize, ready_for_review) that touch `light-s3-client/**` or `pyproject.toml`
+- **What it does:** Compares `__version__` in `light_s3_client/version.py` on the PR branch vs `origin/main`. Fails if the PR version is not strictly greater than main.
+- **PR Comment:** Posts/updates a bot comment on failure; deletes it when the check passes.
+
+### 2. PR Preview / Pre-release (`python-publish-test.yml`)
+- **Trigger:** Pull requests (opened, synchronize, ready_for_review)
+- **What it does:**
+  1. Runs `.hooks/sync_version.py --dev` to auto-generate a `.devN` version (e.g. `0.0.34.dev3`) that doesn't collide with existing Test PyPI versions.
+  2. Builds the package with `hatch build`.
+  3. Publishes to **Test PyPI** using trusted publishing (`pypa/gh-action-pypi-publish` with `repository-url: https://test.pypi.org/legacy/`).
+  4. Comments on the PR with install instructions:
+     ```bash
+     pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple light-s3-client==<version>
+     ```
+
+### 3. Release (`python-publish.yml`)
+- **Trigger:** GitHub Release published
+- **What it does:**
+  1. Validates that the git tag matches the `hatch version` output (e.g. tag `v0.0.34` must match version `0.0.34`).
+  2. Checks if the version already exists on PyPI (skips publish if so).
+  3. Builds the package with `hatch build`.
+  4. Publishes to **PyPI** using trusted publishing (`pypa/gh-action-pypi-publish`).
+  5. Verifies the package is installable from PyPI (retries up to 30 times with 20s intervals).
+
+### Release Process Summary
+
+**Pre-release (automatic on PR):**
+1. Open/update a PR → `version-check.yml` ensures version is bumped.
+2. `python-publish-test.yml` auto-generates a `.devN` version and publishes to Test PyPI.
+3. PR comment provides install command for testing.
+
+**Production release:**
+1. Bump `__version__` in `light_s3_client/version.py`.
+2. Merge PR to main.
+3. Create a GitHub Release with tag matching the version (e.g. `v0.0.34`).
+4. `python-publish.yml` builds and publishes to PyPI, then verifies installability.
+
+### Version Hook (`.hooks/sync_version.py`)
+- Used by the PR Preview workflow with `--dev` flag.
+- In `--dev` mode: if the version hasn't changed from HEAD, auto-generates the next available `.devN` version by querying Test PyPI.
+- Without `--dev`: bumps the patch version if unchanged and exits with error (for local pre-commit use).
+
 ## Dependencies
 
 ### Required Dependencies

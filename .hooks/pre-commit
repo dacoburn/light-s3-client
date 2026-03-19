@@ -1,0 +1,2 @@
+#!/bin/sh
+python .hooks/sync_version.py
