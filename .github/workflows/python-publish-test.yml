@@ -24,32 +24,39 @@ jobs:
           python -m pip install --upgrade pip
           pip install hatchling hatch
 
-      - name: Inject full dynamic version
-        run: python .hooks/sync_version.py --dev
-
-      - name: Clean previous builds
-        run: rm -rf dist/ build/ *.egg-info
-
-      - name: Get Hatch version
+      - name: Get Version
         id: version
         run: |
-          VERSION=$(hatch version | cut -d+ -f1)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          RAW_VERSION=$(hatch version)
+          echo "VERSION=$RAW_VERSION" >> $GITHUB_ENV
+
+      - name: Check if version exists on Test PyPI
+        id: version_check
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          if curl -s -f https://test.pypi.org/pypi/light-s3-client/$VERSION/json > /dev/null; then
+            echo "Version ${VERSION} already exists on Test PyPI"
+            echo "pypi_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version ${VERSION} not found on Test PyPI - proceeding with Test PyPI deployment"
+            echo "pypi_exists=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build package
-        if: steps.version_check.outputs.exists != 'true'
+        if: steps.version_check.outputs.pypi_exists != 'true'
         run: |
           hatch build
 
       - name: Publish to Test PyPI
-        if: steps.version_check.outputs.exists != 'true'
+        if: steps.version_check.outputs.pypi_exists != 'true'
         uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           repository-url: https://test.pypi.org/legacy/
           verbose: true
 
       - name: Comment on PR
-        if: steps.version_check.outputs.exists != 'true'
+        if: steps.version_check.outputs.pypi_exists != 'true'
         uses: actions/github-script@v7
         env:
           VERSION: ${{ env.VERSION }}
