@@ -800,7 +800,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pytest-cov", marker = "extra == 'test'" },
     { name = "python-dotenv", marker = "extra == 'dev'" },
-    { name = "requests", specifier = "~=2.31.0" },
+    { name = "requests", specifier = ">=2.31,<3" },
     { name = "xmltodict", specifier = "~=0.13.0" },
 ]
 provides-extras = ["dev", "test"]
