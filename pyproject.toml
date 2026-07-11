@@ -17,7 +17,7 @@ requires-python = ">=3.8"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
-	"requests~=2.31.0",
+	"requests>=2.31,<3",
 	"xmltodict~=0.13.0"
 ]
 keywords = ["s3", "aws", "client", "lightweight"]
