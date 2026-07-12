@@ -2,7 +2,14 @@
 
 ## Summary of Updates
 
-This file contains a summary of completed updates and changes to the light-s3-client library. When tasks are completed and confirmed, they should be removed from ai-tasks.md and summarized here.
+This file contains a summary of completed updates and changes to the light-s3-client library. Every planner/implementer/verifier session appends its entry here (newest on top) per `plan/working-agreement.md`; the phase index lives in `light-s3-client.md`.
+
+## 2026-07-11 — Plan system introduced (branch improvement/add-ai-automation-plans)
+
+- Adopted the three-role (Planner / Implementer / Verifier) workflow from the example-usage template.
+- Added `light-s3-client.md` (overview + phase index), `plan/working-agreement.md`, `plan/architecture.md`, `plan/defects.md`, and 12 planned phases `dacoburn-1` … `dacoburn-12` under `plan/phases/`.
+- Retired `ai-tasks.md`: every item in it was already marked Completed and is summarized below, so nothing was carried over; all new work items became phases instead.
+- Phase naming convention `<github-account>-<number>` adopted so multiple committers can plan phases without ID clashes.
 
 ## Version 0.0.30 Updates
 
