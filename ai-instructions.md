@@ -43,7 +43,7 @@ pip install -e ".[dev]"
 ## Important Notes
 
 - **Always keep `ai-instructions.md` up to date with new functionality**. New updates should go into `ai-updates.md`.
-- **Completed tasks should be removed from `ai-tasks.md`** and a short summary update should be added to `ai-updates.md`.
+- **Work is planned and tracked through the three-role phase system** — start at [`light-s3-client.md`](light-s3-client.md) (overview + phase index) and follow [`plan/working-agreement.md`](plan/working-agreement.md). The old `ai-tasks.md` has been retired.
 
 ## Supported Functions
 
@@ -282,5 +282,6 @@ The implementation follows AWS documentation for signature creation and handles 
 ## Development Workflow
 
 For development tasks and tracking, please refer to:
-- `ai-tasks.md` - Current tasks and improvements needed
-- `ai-updates.md` - Summary of completed updates and changes
+- `light-s3-client.md` - Project overview + phase index (entry point for all AI sessions)
+- `plan/` - Working agreement, architecture reference, phase files, and defect register
+- `ai-updates.md` - Session changelog of completed updates and changes
