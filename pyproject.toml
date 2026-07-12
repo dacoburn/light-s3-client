@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "light-s3-client"
-version = "0.0.39"
+version = "0.0.40"
 description = "A lightweight S3 client."
 authors = [
 	{ name = "Douglas Coburn", email = "douglas@dactbc.com" }
@@ -17,7 +17,7 @@ requires-python = ">=3.8"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
-	"requests~=2.31.0",
+	"requests>=2.31,<3",
 	"xmltodict~=0.13.0"
 ]
 keywords = ["s3", "aws", "client", "lightweight"]
